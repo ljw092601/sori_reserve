@@ -48,7 +48,9 @@ export default async function Home({
       <div className="rounded-xl border border-amber-300 bg-amber-50 p-6">
         <h2 className="mb-2 font-semibold">⚙️ 설정이 필요합니다</h2>
         <p className="text-sm text-zinc-700">
-          {e instanceof Error ? e.message : "Supabase 연결에 실패했습니다."}
+          {process.env.NODE_ENV === "development" && e instanceof Error
+            ? e.message
+            : "데이터를 불러오지 못했습니다. 서버 환경변수 설정을 확인해주세요."}
         </p>
         <ol className="mt-3 list-decimal pl-5 text-sm text-zinc-700">
           <li>Supabase 프로젝트를 만들고 supabase/schema.sql을 실행하세요.</li>

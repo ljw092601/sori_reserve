@@ -8,6 +8,14 @@ export const RULES = {
   MAX_DAYS_AHEAD: 14,
 } as const;
 
+/** 예약 폼의 빠른 시간 선택 버튼 — RULES 범위를 벗어나는 항목은 자동 제외 */
+export const DURATION_OPTIONS = [30, 60, 120, 180, 240]
+  .filter((min) => min >= RULES.MIN_MINUTES && min <= RULES.MAX_MINUTES)
+  .map((min) => ({
+    label: min % 60 === 0 ? `${min / 60}시간` : `${min}분`,
+    min,
+  }));
+
 /** 시간표 표시 범위 (시) */
 export const DAY_START_HOUR = 9;
 export const DAY_END_HOUR = 24;

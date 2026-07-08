@@ -2,16 +2,9 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RULES } from "@/lib/constants";
+import { DURATION_OPTIONS, RULES } from "@/lib/constants";
+import { kstDateString, kstToIso } from "@/lib/dates";
 import type { Team } from "@/lib/types";
-
-const DURATIONS = [
-  { label: "30분", min: 30 },
-  { label: "1시간", min: 60 },
-  { label: "2시간", min: 120 },
-  { label: "3시간", min: 180 },
-  { label: "4시간", min: 240 },
-];
 
 const fmtTime = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
@@ -53,8 +46,8 @@ export default function ReserveForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         teamId: form.get("teamId"),
-        startsAt: new Date(`${date}T${start}`).toISOString(),
-        endsAt: new Date(`${date}T${end}`).toISOString(),
+        startsAt: kstToIso(date, start),
+        endsAt: kstToIso(date, end),
         note: form.get("note"),
       }),
     });
@@ -69,7 +62,7 @@ export default function ReserveForm() {
     setSubmitting(false);
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = kstDateString(new Date());
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -132,7 +125,7 @@ export default function ReserveForm() {
 
         {/* 시작 시간 기준으로 종료 시간을 빠르게 지정 */}
         <div className="flex flex-wrap gap-1.5">
-          {DURATIONS.map(({ label, min }) => (
+          {DURATION_OPTIONS.map(({ label, min }) => (
             <button
               key={min}
               type="button"

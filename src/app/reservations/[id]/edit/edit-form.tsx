@@ -2,15 +2,9 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { DURATION_OPTIONS } from "@/lib/constants";
+import { kstToIso } from "@/lib/dates";
 import type { Team } from "@/lib/types";
-
-const DURATIONS = [
-  { label: "30분", min: 30 },
-  { label: "1시간", min: 60 },
-  { label: "2시간", min: 120 },
-  { label: "3시간", min: 180 },
-  { label: "4시간", min: 240 },
-];
 
 const fmtTime = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
@@ -62,8 +56,8 @@ export default function EditForm({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         teamId,
-        startsAt: new Date(`${date}T${start}`).toISOString(),
-        endsAt: new Date(`${date}T${end}`).toISOString(),
+        startsAt: kstToIso(date, start),
+        endsAt: kstToIso(date, end),
         note,
       }),
     });
@@ -136,7 +130,7 @@ export default function EditForm({
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {DURATIONS.map(({ label, min }) => (
+        {DURATION_OPTIONS.map(({ label, min }) => (
           <button
             key={min}
             type="button"

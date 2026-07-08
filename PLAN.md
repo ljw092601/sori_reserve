@@ -28,7 +28,7 @@
 
 준비물: [네이버 개발자 센터](https://developers.naver.com)에서 애플리케이션 등록
 - 사용 API: 네이버 로그인 (권한: 이름/닉네임)
-- 콜백 URL: `http://localhost:3000/api/auth/callback/naver` (배포 후 배포 주소도 추가)
+- 콜백 URL: `http://localhost:3000/api/auth/callback/naver` + `https://sorireserve.vercel.app/api/auth/callback/naver`
 - 발급받은 Client ID/Secret을 `.env.local`의 `AUTH_NAVER_ID` / `AUTH_NAVER_SECRET`에 저장
 
 팀 등록/삭제는 관리자(운영진)가 Supabase 대시보드에서 처리.
@@ -96,12 +96,12 @@
 
 ### Phase 1 — MVP (여기까지가 목표)
 1. Next.js + Tailwind 프로젝트 셋업 ✅
-2. Supabase 프로젝트 생성, teams / reservations 테이블 + 겹침 방지 제약
-3. 네이버 로그인 (Auth.js) ✅ (네이버 앱 등록 후 키만 넣으면 됨)
+2. Supabase 프로젝트 생성, teams / reservations 테이블 + 겹침 방지 제약 ✅
+3. 네이버 로그인 (Auth.js) ✅
 4. API: 예약 조회/생성/삭제 + 세션 검증 ✅
 5. 예약 생성 폼 (날짜/시간 직접 입력, 겹침 시 에러 표시) ✅
 6. 메인 주간 시간표 뷰 (팀별 색상, 주 이동, 드래그로 시간 선택) ✅
-7. Vercel 배포
+7. Vercel 배포 ✅ — https://sorireserve.vercel.app (GitHub main 푸시 시 자동 배포)
 
 ### Phase 2 — 개선
 - 모바일 대응 (일간/리스트 뷰)

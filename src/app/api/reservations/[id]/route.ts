@@ -48,11 +48,22 @@ export async function PATCH(
 
   const supabase = supabaseAdmin();
 
-  const { data: reservation } = await supabase
+  const { data: reservation, error: findError } = await supabase
     .from("reservations")
     .select("id, created_by")
     .eq("id", id)
     .single();
+  // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 예약", 그 외는 DB 장애
+  if (
+    findError &&
+    findError.code !== "PGRST116" &&
+    findError.code !== "22P02"
+  ) {
+    return NextResponse.json(
+      { error: "예약 조회에 실패했습니다. 잠시 후 다시 시도해주세요." },
+      { status: 500 }
+    );
+  }
   if (!reservation) {
     return NextResponse.json(
       { error: "예약을 찾을 수 없습니다." },
@@ -116,11 +127,22 @@ export async function DELETE(
   const { id } = await params;
   const supabase = supabaseAdmin();
 
-  const { data: reservation } = await supabase
+  const { data: reservation, error: findError } = await supabase
     .from("reservations")
     .select("id, created_by")
     .eq("id", id)
     .single();
+  // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 예약", 그 외는 DB 장애
+  if (
+    findError &&
+    findError.code !== "PGRST116" &&
+    findError.code !== "22P02"
+  ) {
+    return NextResponse.json(
+      { error: "예약 조회에 실패했습니다. 잠시 후 다시 시도해주세요." },
+      { status: 500 }
+    );
+  }
   if (!reservation) {
     return NextResponse.json(
       { error: "예약을 찾을 수 없습니다." },

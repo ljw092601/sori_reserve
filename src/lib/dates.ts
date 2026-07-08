@@ -24,3 +24,12 @@ export function mondayOf(dateStr: string): string {
 export function dayStartEpoch(dateStr: string): number {
   return Date.parse(dateStr + "T00:00:00+09:00");
 }
+
+/**
+ * KST 기준 날짜(YYYY-MM-DD) + 시각(HH:mm) → ISO 문자열.
+ * `new Date("YYYY-MM-DDTHH:mm")`은 실행 환경의 로컬 타임존으로 해석되므로
+ * 브라우저가 KST가 아니면 시간이 밀린다 — 반드시 이 헬퍼를 쓸 것.
+ */
+export function kstToIso(dateStr: string, time: string): string {
+  return new Date(`${dateStr}T${time}:00+09:00`).toISOString();
+}

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { validateRange } from "@/lib/validate";
 import { RULES } from "@/lib/constants";
+import { dayStartEpoch, kstDateString } from "@/lib/dates";
 
 const RESERVATION_SELECT =
   "id, team_id, starts_at, ends_at, note, created_by, created_by_name, created_at, team:teams(id, name, color)";
@@ -13,11 +14,15 @@ const RESERVATION_SELECT =
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
+  // 기본값은 KST 기준 오늘 자정부터 — UTC 날짜를 쓰면 KST 00~09시에 하루가 밀린다
+  const todayStartMs = dayStartEpoch(kstDateString(new Date()));
   const from =
-    searchParams.get("from") ?? new Date().toISOString().slice(0, 10);
+    searchParams.get("from") ?? new Date(todayStartMs).toISOString();
   const to =
     searchParams.get("to") ??
-    new Date(Date.now() + RULES.MAX_DAYS_AHEAD * 86_400_000).toISOString();
+    new Date(
+      todayStartMs + (RULES.MAX_DAYS_AHEAD + 1) * 86_400_000
+    ).toISOString();
 
   const supabase = supabaseAdmin();
   const { data, error } = await supabase
