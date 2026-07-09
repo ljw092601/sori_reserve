@@ -16,6 +16,16 @@ export const DURATION_OPTIONS = [30, 60, 120, 180, 240]
     min,
   }));
 
+/** 팀원 세션 선택지 — 이 외에는 "직접 입력"으로 자유 입력 */
+export const SESSION_PRESETS = [
+  "보컬",
+  "기타1",
+  "기타2",
+  "드럼",
+  "베이스",
+  "키보드",
+] as const;
+
 /** 모집 상태 표시 라벨 */
 export const TEAM_STATUS_LABEL = {
   recruiting: "모집중",

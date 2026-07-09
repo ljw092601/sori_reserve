@@ -1,6 +1,7 @@
 "use client";
 
-import { TEAM_STATUS_LABEL } from "@/lib/constants";
+import { useState } from "react";
+import { SESSION_PRESETS, TEAM_STATUS_LABEL } from "@/lib/constants";
 import type { MemberEntry } from "@/lib/types";
 
 /** 모집중/모집완료 선택 (생성·수정 폼 공용) */
@@ -40,6 +41,81 @@ export function StatusRadio({
   );
 }
 
+const CUSTOM = "__custom__";
+
+/** 팀원 한 줄 — 세션은 선택 박스, "직접 입력" 선택 시 입력칸이 나타난다 */
+function MemberRow({
+  row,
+  onUpdate,
+  onRemove,
+}: {
+  row: MemberEntry;
+  onUpdate: (patch: Partial<MemberEntry>) => void;
+  onRemove: () => void;
+}) {
+  // 기존 값이 선택지에 없으면 직접 입력 모드로 시작 (수정 폼에서 불러온 경우)
+  const [custom, setCustom] = useState(
+    row.session !== "" &&
+      !(SESSION_PRESETS as readonly string[]).includes(row.session)
+  );
+
+  function handleSelect(v: string) {
+    if (v === CUSTOM) {
+      setCustom(true);
+      onUpdate({ session: "" });
+    } else {
+      setCustom(false);
+      onUpdate({ session: v });
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <select
+          value={custom ? CUSTOM : row.session}
+          onChange={(e) => handleSelect(e.target.value)}
+          className="w-0 flex-1 rounded-lg border border-zinc-300 bg-white p-2.5"
+        >
+          <option value="">세션 선택</option>
+          {SESSION_PRESETS.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+          <option value={CUSTOM}>직접 입력</option>
+        </select>
+        <input
+          type="text"
+          value={row.name}
+          onChange={(e) => onUpdate({ name: e.target.value })}
+          maxLength={20}
+          placeholder="이름 (비우면 모집중)"
+          className="w-0 flex-1 rounded-lg border border-zinc-300 bg-white p-2.5"
+        />
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label="팀원 줄 삭제"
+          className="shrink-0 rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-400 hover:border-red-300 hover:text-red-500"
+        >
+          ✕
+        </button>
+      </div>
+      {custom && (
+        <input
+          type="text"
+          value={row.session}
+          onChange={(e) => onUpdate({ session: e.target.value })}
+          maxLength={20}
+          placeholder="세션 직접 입력 (예: 퍼커션)"
+          className="rounded-lg border border-zinc-300 bg-white p-2.5"
+        />
+      )}
+    </div>
+  );
+}
+
 /**
  * 팀원 목록 입력 (생성·수정 폼 공용)
  * 세션 + 이름 한 줄씩, "팀원 추가"로 행을 늘린다.
@@ -52,51 +128,25 @@ export function MembersInput({
   value: MemberEntry[];
   onChange: (rows: MemberEntry[]) => void;
 }) {
-  function update(i: number, patch: Partial<MemberEntry>) {
-    onChange(value.map((row, j) => (j === i ? { ...row, ...patch } : row)));
-  }
-  function remove(i: number) {
-    onChange(value.filter((_, j) => j !== i));
-  }
-  function add() {
-    onChange([...value, { session: "", name: "" }]);
-  }
-
   return (
     <div className="flex flex-col gap-1 text-sm font-medium">
       <span>팀원</span>
       <div className="flex flex-col gap-2">
         {value.map((row, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <input
-              type="text"
-              value={row.session}
-              onChange={(e) => update(i, { session: e.target.value })}
-              maxLength={20}
-              placeholder="세션 (예: 드럼)"
-              className="w-0 flex-1 rounded-lg border border-zinc-300 bg-white p-2.5"
-            />
-            <input
-              type="text"
-              value={row.name}
-              onChange={(e) => update(i, { name: e.target.value })}
-              maxLength={20}
-              placeholder="이름 (비우면 모집중)"
-              className="w-0 flex-1 rounded-lg border border-zinc-300 bg-white p-2.5"
-            />
-            <button
-              type="button"
-              onClick={() => remove(i)}
-              aria-label="팀원 줄 삭제"
-              className="shrink-0 rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-400 hover:border-red-300 hover:text-red-500"
-            >
-              ✕
-            </button>
-          </div>
+          <MemberRow
+            key={i}
+            row={row}
+            onUpdate={(patch) =>
+              onChange(
+                value.map((r, j) => (j === i ? { ...r, ...patch } : r))
+              )
+            }
+            onRemove={() => onChange(value.filter((_, j) => j !== i))}
+          />
         ))}
         <button
           type="button"
-          onClick={add}
+          onClick={() => onChange([...value, { session: "", name: "" }])}
           className="rounded-lg border border-dashed border-zinc-300 p-2.5 text-sm text-zinc-500 hover:border-zinc-500 hover:text-zinc-700"
         >
           + 팀원 추가
