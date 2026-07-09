@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase";
 import { TEAM_STATUS_LABEL } from "@/lib/constants";
+import type { MemberEntry } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,9 @@ export default async function TeamsPage() {
           {posts.map((p) => {
             const commentCount =
               (p.comments as unknown as { count: number }[])?.[0]?.count ?? 0;
+            const members = (p.members ?? []) as MemberEntry[];
+            const confirmed = members.filter((m) => m.name);
+            const recruiting = members.filter((m) => !m.name);
             return (
               <li key={p.id}>
                 <Link
@@ -83,8 +87,18 @@ export default async function TeamsPage() {
                       {p.content}
                     </p>
                   )}
-                  {p.members && (
-                    <p className="text-sm text-zinc-600">👥 {p.members}</p>
+                  {confirmed.length > 0 && (
+                    <p className="text-sm text-zinc-600">
+                      👥{" "}
+                      {confirmed
+                        .map((m) => `${m.session} ${m.name}`)
+                        .join(", ")}
+                    </p>
+                  )}
+                  {recruiting.length > 0 && (
+                    <p className="text-sm font-medium text-amber-600">
+                      🔍 모집중: {recruiting.map((m) => m.session).join(", ")}
+                    </p>
                   )}
                   <div className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
                     <span>{p.created_by_name ?? "운영진"}</span>

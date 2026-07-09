@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { TEAM_COLORS } from "@/lib/constants";
+import { parseMemberEntries } from "@/lib/validate";
 
 const TEAM_SELECT =
   "id, name, color, status, members, content, created_by, created_by_name, created_at";
@@ -22,8 +23,8 @@ export async function GET() {
 
 /**
  * POST /api/teams — 팀원 모집글 쓰기 (네이버 로그인 필요)
- * body: { name(곡 제목), members?, content? }
- * 색상은 사용 중이 아닌 팔레트 색을 자동 배정. 상태는 '모집중'으로 시작.
+ * body: { name(곡 제목), status?, members?: {session, name}[], content? }
+ * 색상은 사용 중이 아닌 팔레트 색을 자동 배정.
  */
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -34,7 +35,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { name?: string; members?: string; content?: string };
+  let body: {
+    name?: string;
+    status?: string;
+    members?: unknown;
+    content?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -54,6 +60,17 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  const status = body.status ?? "recruiting";
+  if (status !== "recruiting" && status !== "closed") {
+    return NextResponse.json(
+      { error: "모집 상태 값이 올바르지 않습니다." },
+      { status: 400 }
+    );
+  }
+  const parsed = parseMemberEntries(body.members);
+  if ("error" in parsed) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
+  }
 
   const supabase = supabaseAdmin();
 
@@ -68,7 +85,8 @@ export async function POST(req: NextRequest) {
     .insert({
       name,
       color,
-      members: body.members?.trim() || null,
+      status,
+      members: parsed.entries,
       content: body.content?.trim() || null,
       created_by: session.user.id,
       created_by_name: session.user.name ?? "이름 없음",

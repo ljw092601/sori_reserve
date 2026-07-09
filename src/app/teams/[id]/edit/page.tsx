@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth, signIn } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import type { MemberEntry } from "@/lib/types";
 import EditForm from "./edit-form";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +48,7 @@ export default async function TeamEditPage({
       initial={{
         name: team.name,
         status: (team.status ?? "recruiting") as "recruiting" | "closed",
-        members: team.members ?? "",
+        members: (team.members ?? []) as MemberEntry[],
         content: team.content ?? "",
       }}
     />

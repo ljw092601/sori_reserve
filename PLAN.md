@@ -42,7 +42,7 @@
 | name | text | **곡 제목** (시간표/예약 드롭다운에 그대로 표시, 중복 허용) |
 | color | text | 캘린더 표시 색상 (팔레트에서 자동 배정) |
 | status | text | `recruiting`(모집중) / `closed`(모집완료) |
-| members | text (nullable) | 현재 모인 팀원 (자유 입력) |
+| members | jsonb | 팀원 목록 `[{session, name}]` — name이 비면 그 세션은 모집중 |
 | content | text (nullable) | 모집 글 본문 |
 | created_by | text (nullable) | 작성자 네이버 ID (null = 운영진 등록) |
 | created_by_name | text (nullable) | 표시용 작성자 이름 |
@@ -100,7 +100,7 @@
 | POST | `/api/reservations` | 예약 생성 (로그인 필요 / teamId, startsAt, endsAt, note) |
 | PATCH/DELETE | `/api/reservations/[id]` | 예약 수정/취소 (예약자 본인만) |
 | GET | `/api/teams` | 모집글(팀) 목록 |
-| POST | `/api/teams` | 모집글 쓰기 (로그인 필요 / name=곡 제목, members?, content?) |
+| POST | `/api/teams` | 모집글 쓰기 (로그인 필요 / name=곡 제목, status?, members?: {session,name}[], content?) |
 | PATCH | `/api/teams/[id]` | 모집글 수정 (로그인한 누구나 / name, status, members?, content?) |
 | DELETE | `/api/teams/[id]` | 모집글 삭제 (작성자 본인만) |
 | POST | `/api/teams/[id]/comments` | 댓글 쓰기 (로그인 필요) |

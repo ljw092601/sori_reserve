@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { TEAM_STATUS_LABEL, TIME_ZONE } from "@/lib/constants";
-import type { TeamComment } from "@/lib/types";
+import type { MemberEntry, TeamComment } from "@/lib/types";
 import DeleteForm from "./delete-form";
 import CommentForm from "./comment-form";
 import CommentDeleteButton from "./comment-delete-button";
@@ -44,6 +44,7 @@ export default async function TeamDetailPage({
   ]);
 
   const status = (team.status ?? "recruiting") as "recruiting" | "closed";
+  const members = (team.members ?? []) as MemberEntry[];
   const isOwner = !!team.created_by && session?.user?.id === team.created_by;
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString("ko-KR", {
@@ -82,12 +83,32 @@ export default async function TeamDetailPage({
             {team.content}
           </p>
         )}
-        <dl className="flex flex-col gap-1 text-sm text-zinc-600">
-          {team.members && <div>👥 현재 팀원: {team.members}</div>}
-          <div className="text-xs text-zinc-400">
-            작성자: {team.created_by_name ?? "운영진"}
+        {members.length > 0 && (
+          <div className="mb-3">
+            <h3 className="mb-1 text-xs font-semibold text-zinc-400">
+              팀원
+            </h3>
+            <ul className="flex flex-col gap-1 text-sm">
+              {members.map((m, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <span className="w-16 shrink-0 text-zinc-500">
+                    {m.session}
+                  </span>
+                  {m.name ? (
+                    <span className="text-zinc-700">{m.name}</span>
+                  ) : (
+                    <span className="font-medium text-amber-600">
+                      모집중
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
-        </dl>
+        )}
+        <p className="text-xs text-zinc-400">
+          작성자: {team.created_by_name ?? "운영진"}
+        </p>
       </div>
 
       <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-5">

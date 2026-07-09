@@ -11,7 +11,9 @@ create table teams (
   color           text not null default '#6366f1',
   status          text not null default 'recruiting'
                     check (status in ('recruiting', 'closed')), -- 모집중/모집완료
-  members         text,            -- 현재 모인 팀원 (자유 입력)
+  members         jsonb not null default '[]',
+                  -- 팀원 목록: [{"session": "드럼", "name": "홍길동"}, ...]
+                  -- name이 빈 문자열이면 그 세션은 모집중
   content         text,            -- 모집 글 본문
   created_by      text,            -- 작성자 네이버 ID (null = 관리자가 등록한 팀)
   created_by_name text,            -- 표시용 작성자 이름
@@ -88,3 +90,8 @@ create index reservations_starts_at_idx on reservations (starts_at);
 -- create index comments_team_id_idx on comments (team_id);
 -- (song 컬럼은 배포 중 구버전 코드 호환을 위해 남겨둠 — 나중에 정리:
 --  alter table teams drop column song;)
+
+-- [마이그레이션] 팀원을 세션/이름 구조(jsonb)로 변경 — 위까지 실행했다면 아래만 실행:
+-- (기존 텍스트 팀원 정보는 사라짐)
+-- alter table teams drop column members;
+-- alter table teams add column members jsonb not null default '[]';

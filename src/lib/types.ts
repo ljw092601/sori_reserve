@@ -1,3 +1,11 @@
+/** 팀원 한 명 — name이 빈 문자열이면 그 세션은 모집중 */
+export type MemberEntry = {
+  /** 세션 (보컬, 기타, 베이스, 드럼, 키보드 등) */
+  session: string;
+  /** 이름 — 비우면 모집중인 세션으로 표시 */
+  name: string;
+};
+
 /** 팀 = 팀원 모집글. name에는 곡 제목이 들어간다. */
 export type Team = {
   id: string;
@@ -6,8 +14,8 @@ export type Team = {
   color: string;
   /** 모집 상태 */
   status?: "recruiting" | "closed";
-  /** 현재 모인 팀원 (자유 입력) */
-  members?: string | null;
+  /** 팀원 목록 (세션/이름) */
+  members?: MemberEntry[];
   /** 모집 글 본문 */
   content?: string | null;
   /** 작성자 네이버 ID — null이면 관리자가 등록한 팀 */

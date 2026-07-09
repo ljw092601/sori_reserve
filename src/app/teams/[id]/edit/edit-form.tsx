@@ -2,7 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { TEAM_STATUS_LABEL } from "@/lib/constants";
+import type { MemberEntry } from "@/lib/types";
+import { MembersInput, StatusRadio } from "../../form-fields";
 
 export default function EditForm({
   teamId,
@@ -12,7 +13,7 @@ export default function EditForm({
   initial: {
     name: string;
     status: "recruiting" | "closed";
-    members: string;
+    members: MemberEntry[];
     content: string;
   };
 }) {
@@ -24,7 +25,9 @@ export default function EditForm({
   const [status, setStatus] = useState<"recruiting" | "closed">(
     initial.status
   );
-  const [members, setMembers] = useState(initial.members);
+  const [members, setMembers] = useState<MemberEntry[]>(
+    initial.members.length > 0 ? initial.members : [{ session: "", name: "" }]
+  );
   const [content, setContent] = useState(initial.content);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -65,42 +68,9 @@ export default function EditForm({
           />
         </label>
 
-        <fieldset className="flex flex-col gap-1 text-sm font-medium">
-          <legend className="mb-1">모집 상태</legend>
-          <div className="flex gap-2">
-            {(["recruiting", "closed"] as const).map((s) => (
-              <label
-                key={s}
-                className={`flex-1 cursor-pointer rounded-lg border p-2.5 text-center text-sm font-medium ${
-                  status === s
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-zinc-300 bg-white text-zinc-600 hover:border-zinc-500"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="status"
-                  value={s}
-                  checked={status === s}
-                  onChange={() => setStatus(s)}
-                  className="sr-only"
-                />
-                {TEAM_STATUS_LABEL[s]}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <StatusRadio value={status} onChange={setStatus} />
 
-        <label className="flex flex-col gap-1 text-sm font-medium">
-          현재 모인 팀원 (선택)
-          <input
-            type="text"
-            value={members}
-            onChange={(e) => setMembers(e.target.value)}
-            placeholder="예: 보컬 홍길동, 기타 김철수"
-            className="rounded-lg border border-zinc-300 bg-white p-2.5"
-          />
-        </label>
+        <MembersInput value={members} onChange={setMembers} />
 
         <label className="flex flex-col gap-1 text-sm font-medium">
           모집 글 (선택)

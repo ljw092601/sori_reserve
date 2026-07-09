@@ -1,4 +1,46 @@
 import { RULES } from "./constants";
+import type { MemberEntry } from "./types";
+
+/**
+ * 모집글 팀원 목록을 검증·정리한다.
+ * - 세션/이름이 모두 빈 행은 버린다
+ * - 이름만 있고 세션이 없으면 에러
+ * - 이름이 비어 있으면 그 세션은 모집중으로 취급 (그대로 저장)
+ */
+export function parseMemberEntries(
+  input: unknown
+): { entries: MemberEntry[] } | { error: string } {
+  if (input == null) return { entries: [] };
+  if (!Array.isArray(input)) {
+    return { error: "팀원 목록 형식이 올바르지 않습니다." };
+  }
+  if (input.length > 20) {
+    return { error: "팀원은 20명까지 입력할 수 있습니다." };
+  }
+
+  const entries: MemberEntry[] = [];
+  for (const item of input) {
+    if (typeof item !== "object" || item === null) {
+      return { error: "팀원 목록 형식이 올바르지 않습니다." };
+    }
+    const { session, name } = item as { session?: unknown; name?: unknown };
+    if (
+      (session != null && typeof session !== "string") ||
+      (name != null && typeof name !== "string")
+    ) {
+      return { error: "팀원 목록 형식이 올바르지 않습니다." };
+    }
+    const s = typeof session === "string" ? session.trim() : "";
+    const n = typeof name === "string" ? name.trim() : "";
+    if (!s && !n) continue; // 완전히 빈 행은 무시
+    if (!s) return { error: "세션을 입력하지 않은 팀원이 있습니다." };
+    if (s.length > 20 || n.length > 20) {
+      return { error: "세션/이름은 20자 이내로 입력해주세요." };
+    }
+    entries.push({ session: s, name: n });
+  }
+  return { entries };
+}
 
 /**
  * 예약 시간 범위를 검증한다. 문제가 있으면 사용자에게 보여줄 메시지를,
