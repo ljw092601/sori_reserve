@@ -4,15 +4,15 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { TEAM_COLORS } from "@/lib/constants";
 
 const TEAM_SELECT =
-  "id, name, color, song, members, created_by, created_by_name, created_at";
+  "id, name, color, status, members, content, created_by, created_by_name, created_at";
 
-/** GET /api/teams — 팀 목록 (로그인 불필요) */
+/** GET /api/teams — 모집글(팀) 목록 (로그인 불필요) */
 export async function GET() {
   const supabase = supabaseAdmin();
   const { data, error } = await supabase
     .from("teams")
     .select(TEAM_SELECT)
-    .order("name");
+    .order("created_at", { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -21,9 +21,9 @@ export async function GET() {
 }
 
 /**
- * POST /api/teams — 팀 만들기 (네이버 로그인 필요)
- * body: { name, song?, members? }
- * 색상은 사용 중이 아닌 팔레트 색을 자동 배정.
+ * POST /api/teams — 팀원 모집글 쓰기 (네이버 로그인 필요)
+ * body: { name(곡 제목), members?, content? }
+ * 색상은 사용 중이 아닌 팔레트 색을 자동 배정. 상태는 '모집중'으로 시작.
  */
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { name?: string; song?: string; members?: string };
+  let body: { name?: string; members?: string; content?: string };
   try {
     body = await req.json();
   } catch {
@@ -44,13 +44,13 @@ export async function POST(req: NextRequest) {
   const name = body.name?.trim();
   if (!name) {
     return NextResponse.json(
-      { error: "팀 이름은 필수입니다." },
+      { error: "곡 제목은 필수입니다." },
       { status: 400 }
     );
   }
-  if (name.length > 30) {
+  if (name.length > 50) {
     return NextResponse.json(
-      { error: "팀 이름은 30자 이내로 입력해주세요." },
+      { error: "곡 제목은 50자 이내로 입력해주세요." },
       { status: 400 }
     );
   }
@@ -68,8 +68,8 @@ export async function POST(req: NextRequest) {
     .insert({
       name,
       color,
-      song: body.song?.trim() || null,
       members: body.members?.trim() || null,
+      content: body.content?.trim() || null,
       created_by: session.user.id,
       created_by_name: session.user.name ?? "이름 없음",
     })
@@ -77,13 +77,6 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    // 23505: unique 위반 = 같은 이름의 팀이 이미 있음
-    if (error.code === "23505") {
-      return NextResponse.json(
-        { error: "이미 같은 이름의 팀이 있습니다." },
-        { status: 409 }
-      );
-    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json({ team: data }, { status: 201 });

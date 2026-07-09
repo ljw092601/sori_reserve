@@ -16,6 +16,12 @@ export const DURATION_OPTIONS = [30, 60, 120, 180, 240]
     min,
   }));
 
+/** 모집 상태 표시 라벨 */
+export const TEAM_STATUS_LABEL = {
+  recruiting: "모집중",
+  closed: "모집완료",
+} as const;
+
 /** 새 팀 색상 자동 배정 팔레트 — 사용 중이 아닌 색을 앞에서부터 고른다 */
 export const TEAM_COLORS = [
   "#ef4444",

@@ -9,7 +9,9 @@ export default async function NewTeamPage() {
   if (!session?.user) {
     return (
       <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 rounded-xl border border-zinc-200 bg-white p-10 text-center">
-        <p className="text-zinc-600">팀을 만들려면 네이버 로그인이 필요합니다.</p>
+        <p className="text-zinc-600">
+          모집글을 쓰려면 네이버 로그인이 필요합니다.
+        </p>
         <form
           action={async () => {
             "use server";

@@ -28,7 +28,7 @@ export default async function RootLayout({
                 href="/teams"
                 className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
               >
-                팀 게시판
+                팀 모집
               </Link>
               <Link
                 href="/reserve"

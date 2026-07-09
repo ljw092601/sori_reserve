@@ -19,8 +19,8 @@ export default function TeamForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: form.get("name"),
-        song: form.get("song"),
         members: form.get("members"),
+        content: form.get("content"),
       }),
     });
 
@@ -30,43 +30,43 @@ export default function TeamForm() {
       return;
     }
     const data = await res.json().catch(() => null);
-    setError(data?.error ?? "팀 만들기에 실패했습니다.");
+    setError(data?.error ?? "모집글 등록에 실패했습니다.");
     setSubmitting(false);
   }
 
   return (
     <div className="mx-auto w-full max-w-md">
-      <h1 className="mb-6 text-xl font-bold">팀 만들기</h1>
+      <h1 className="mb-6 text-xl font-bold">팀원 모집글 쓰기</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm font-medium">
-          팀 이름
+          곡 제목
           <input
             type="text"
             name="name"
             required
-            maxLength={30}
-            placeholder="예: 소나기"
-            className="rounded-lg border border-zinc-300 bg-white p-2.5"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm font-medium">
-          하고 싶은 곡 (선택)
-          <input
-            type="text"
-            name="song"
+            maxLength={50}
             placeholder="예: 잔나비 - 주저하는 연인들을 위해"
             className="rounded-lg border border-zinc-300 bg-white p-2.5"
           />
         </label>
 
         <label className="flex flex-col gap-1 text-sm font-medium">
-          팀원 (선택)
-          <textarea
+          현재 모인 팀원 (선택)
+          <input
+            type="text"
             name="members"
-            rows={3}
-            placeholder="예: 보컬 홍길동 / 기타 김철수 / 드럼 모집 중"
+            placeholder="예: 보컬 홍길동, 기타 김철수"
+            className="rounded-lg border border-zinc-300 bg-white p-2.5"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          모집 글 (선택)
+          <textarea
+            name="content"
+            rows={5}
+            placeholder={"예: 드럼, 베이스 구합니다!\n연습은 주 1회 예정이에요."}
             className="rounded-lg border border-zinc-300 bg-white p-2.5"
           />
         </label>
@@ -82,12 +82,12 @@ export default function TeamForm() {
           disabled={submitting}
           className="rounded-lg bg-zinc-900 p-3 font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
         >
-          {submitting ? "만드는 중..." : "팀 만들기"}
+          {submitting ? "등록 중..." : "모집글 올리기"}
         </button>
 
         <p className="text-xs text-zinc-500">
-          팀을 만들면 예약 페이지의 팀 목록에 바로 나타나요. 팀 색상은 자동으로
-          정해집니다.
+          글을 올리면 &apos;모집중&apos; 상태로 시작하고, 예약 페이지의 팀
+          목록에 곡 제목이 바로 나타나요. 팀 색상은 자동으로 정해집니다.
         </p>
       </form>
     </div>

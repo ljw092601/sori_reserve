@@ -17,7 +17,7 @@ export default function DeleteForm({
   async function handleDelete() {
     if (
       !confirm(
-        `'${teamName}' 팀을 삭제할까요?\n이 팀의 예약도 모두 함께 삭제됩니다.`
+        `'${teamName}' 모집글을 삭제할까요?\n이 팀의 예약과 댓글도 모두 함께 삭제됩니다.`
       )
     ) {
       return;
@@ -48,7 +48,7 @@ export default function DeleteForm({
         disabled={deleting}
         className="w-full rounded-lg border border-red-300 p-3 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
       >
-        {deleting ? "삭제 중..." : "팀 삭제"}
+        {deleting ? "삭제 중..." : "모집글 삭제"}
       </button>
     </div>
   );

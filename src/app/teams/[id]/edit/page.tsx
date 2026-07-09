@@ -16,7 +16,7 @@ export default async function TeamEditPage({
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id, name, song, members")
+    .select("id, name, status, members, content")
     .eq("id", id)
     .single();
   if (!team) notFound();
@@ -25,7 +25,7 @@ export default async function TeamEditPage({
     return (
       <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 rounded-xl border border-zinc-200 bg-white p-10 text-center">
         <p className="text-zinc-600">
-          팀 정보를 수정하려면 네이버 로그인이 필요합니다.
+          모집글을 수정하려면 네이버 로그인이 필요합니다.
         </p>
         <form
           action={async () => {
@@ -46,8 +46,9 @@ export default async function TeamEditPage({
       teamId={team.id}
       initial={{
         name: team.name,
-        song: team.song ?? "",
+        status: (team.status ?? "recruiting") as "recruiting" | "closed",
         members: team.members ?? "",
+        content: team.content ?? "",
       }}
     />
   );

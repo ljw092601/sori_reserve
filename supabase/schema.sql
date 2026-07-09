@@ -4,16 +4,31 @@
 -- 시간 범위 겹침 방지(exclusion constraint)에 필요한 확장
 create extension if not exists btree_gist;
 
+-- 팀 = 팀원 모집글. name에는 곡 제목을 저장한다 (시간표/예약 드롭다운에 그대로 표시).
 create table teams (
   id              uuid primary key default gen_random_uuid(),
-  name            text not null unique,
+  name            text not null,   -- 곡 제목 (같은 곡으로 여러 모집글 가능)
   color           text not null default '#6366f1',
-  song            text,            -- 하고 싶은 곡 (팀 게시판)
-  members         text,            -- 팀원 소개 (자유 입력)
+  status          text not null default 'recruiting'
+                    check (status in ('recruiting', 'closed')), -- 모집중/모집완료
+  members         text,            -- 현재 모인 팀원 (자유 입력)
+  content         text,            -- 모집 글 본문
   created_by      text,            -- 작성자 네이버 ID (null = 관리자가 등록한 팀)
   created_by_name text,            -- 표시용 작성자 이름
   created_at      timestamptz not null default now()
 );
+
+-- 모집글 댓글
+create table comments (
+  id              uuid primary key default gen_random_uuid(),
+  team_id         uuid not null references teams (id) on delete cascade,
+  content         text not null,
+  created_by      text not null,   -- 작성자 네이버 ID (본인만 삭제 가능)
+  created_by_name text not null,
+  created_at      timestamptz not null default now()
+);
+
+create index comments_team_id_idx on comments (team_id);
 
 create table reservations (
   id              uuid primary key default gen_random_uuid(),
@@ -54,3 +69,22 @@ create index reservations_starts_at_idx on reservations (starts_at);
 --   add column members text,
 --   add column created_by text,
 --   add column created_by_name text;
+
+-- [마이그레이션] 팀 모집 게시판 개편 — 위까지 실행한 상태라면 아래만 실행:
+-- alter table teams drop constraint teams_name_key;
+-- update teams set name = coalesce(song, name);
+-- alter table teams
+--   add column status text not null default 'recruiting'
+--     check (status in ('recruiting', 'closed')),
+--   add column content text;
+-- create table comments (
+--   id              uuid primary key default gen_random_uuid(),
+--   team_id         uuid not null references teams (id) on delete cascade,
+--   content         text not null,
+--   created_by      text not null,
+--   created_by_name text not null,
+--   created_at      timestamptz not null default now()
+-- );
+-- create index comments_team_id_idx on comments (team_id);
+-- (song 컬럼은 배포 중 구버전 코드 호환을 위해 남겨둠 — 나중에 정리:
+--  alter table teams drop column song;)

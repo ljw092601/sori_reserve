@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 
-/** 팀 조회 — { team } 또는 { fail: 에러 응답 } */
+/** 팀(모집글) 조회 — { team } 또는 { fail: 에러 응답 } */
 async function findTeam(id: string) {
   const supabase = supabaseAdmin();
   const { data: team, error } = await supabase
@@ -11,12 +11,12 @@ async function findTeam(id: string) {
     .eq("id", id)
     .single();
 
-  // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 팀", 그 외는 DB 장애
+  // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 글", 그 외는 DB 장애
   if (error && error.code !== "PGRST116" && error.code !== "22P02") {
     return {
       team: null,
       fail: NextResponse.json(
-        { error: "팀 조회에 실패했습니다. 잠시 후 다시 시도해주세요." },
+        { error: "모집글 조회에 실패했습니다. 잠시 후 다시 시도해주세요." },
         { status: 500 }
       ),
     };
@@ -25,7 +25,7 @@ async function findTeam(id: string) {
     return {
       team: null,
       fail: NextResponse.json(
-        { error: "팀을 찾을 수 없습니다." },
+        { error: "모집글을 찾을 수 없습니다." },
         { status: 404 }
       ),
     };
@@ -34,8 +34,8 @@ async function findTeam(id: string) {
 }
 
 /**
- * PATCH /api/teams/[id] — 팀 정보 수정 (로그인한 누구나)
- * body: { name, song?, members? }
+ * PATCH /api/teams/[id] — 모집글 수정 (로그인한 누구나)
+ * body: { name(곡 제목), status, members?, content? }
  */
 export async function PATCH(
   req: NextRequest,
@@ -51,7 +51,12 @@ export async function PATCH(
 
   const { id } = await params;
 
-  let body: { name?: string; song?: string; members?: string };
+  let body: {
+    name?: string;
+    status?: string;
+    members?: string;
+    content?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -61,13 +66,19 @@ export async function PATCH(
   const name = body.name?.trim();
   if (!name) {
     return NextResponse.json(
-      { error: "팀 이름은 필수입니다." },
+      { error: "곡 제목은 필수입니다." },
       { status: 400 }
     );
   }
-  if (name.length > 30) {
+  if (name.length > 50) {
     return NextResponse.json(
-      { error: "팀 이름은 30자 이내로 입력해주세요." },
+      { error: "곡 제목은 50자 이내로 입력해주세요." },
+      { status: 400 }
+    );
+  }
+  if (body.status !== "recruiting" && body.status !== "closed") {
+    return NextResponse.json(
+      { error: "모집 상태 값이 올바르지 않습니다." },
       { status: 400 }
     );
   }
@@ -80,28 +91,23 @@ export async function PATCH(
     .from("teams")
     .update({
       name,
-      song: body.song?.trim() || null,
+      status: body.status,
       members: body.members?.trim() || null,
+      content: body.content?.trim() || null,
     })
     .eq("id", id)
     .select("id")
     .single();
 
   if (error) {
-    if (error.code === "23505") {
-      return NextResponse.json(
-        { error: "이미 같은 이름의 팀이 있습니다." },
-        { status: 409 }
-      );
-    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json({ team: data });
 }
 
 /**
- * DELETE /api/teams/[id] — 팀 삭제 (작성자 본인만)
- * 주의: 이 팀의 예약도 함께 삭제된다 (FK on delete cascade).
+ * DELETE /api/teams/[id] — 모집글 삭제 (작성자 본인만)
+ * 주의: 이 팀의 예약·댓글도 함께 삭제된다 (FK on delete cascade).
  */
 export async function DELETE(
   _req: NextRequest,
@@ -124,7 +130,7 @@ export async function DELETE(
     found.team.created_by !== session.user.id
   ) {
     return NextResponse.json(
-      { error: "본인이 만든 팀만 삭제할 수 있습니다." },
+      { error: "본인이 쓴 모집글만 삭제할 수 있습니다." },
       { status: 403 }
     );
   }
