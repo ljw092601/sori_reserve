@@ -25,6 +25,12 @@ export default async function RootLayout({
             </Link>
             <div className="flex items-center gap-3">
               <Link
+                href="/teams"
+                className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
+              >
+                팀 게시판
+              </Link>
+              <Link
                 href="/reserve"
                 className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
               >

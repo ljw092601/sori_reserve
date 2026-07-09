@@ -16,6 +16,20 @@ export const DURATION_OPTIONS = [30, 60, 120, 180, 240]
     min,
   }));
 
+/** 새 팀 색상 자동 배정 팔레트 — 사용 중이 아닌 색을 앞에서부터 고른다 */
+export const TEAM_COLORS = [
+  "#ef4444",
+  "#f97316",
+  "#eab308",
+  "#22c55e",
+  "#14b8a6",
+  "#3b82f6",
+  "#6366f1",
+  "#a855f7",
+  "#ec4899",
+  "#78716c",
+];
+
 /** 시간표 표시 범위 (시) */
 export const DAY_START_HOUR = 9;
 export const DAY_END_HOUR = 24;

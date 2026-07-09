@@ -35,13 +35,19 @@
 
 ## 4. 데이터 모델
 
-### teams (팀)
+### teams (팀 = 팀 게시판 글)
 | 컬럼 | 타입 | 설명 |
 |------|------|------|
 | id | uuid (PK) | |
 | name | text (unique) | 팀 이름 |
-| color | text | 캘린더 표시 색상 |
+| color | text | 캘린더 표시 색상 (팔레트에서 자동 배정) |
+| song | text (nullable) | 하고 싶은 곡 |
+| members | text (nullable) | 팀원 소개 (자유 입력) |
+| created_by | text (nullable) | 작성자 네이버 ID (null = 운영진 등록) |
+| created_by_name | text (nullable) | 표시용 작성자 이름 |
 | created_at | timestamptz | |
+
+팀 게시판(`/teams`)에서 누구나 팀을 만들 수 있고, 만든 팀은 예약 페이지 드롭다운에 바로 나타난다. 팀 정보 수정은 로그인한 누구나 가능, 삭제만 작성자 본인 제한 (팀 삭제 시 그 팀의 예약도 함께 삭제 — FK cascade).
 
 ### reservations (예약)
 | 컬럼 | 타입 | 설명 |
@@ -67,8 +73,11 @@
 |------|------|
 | `/` | 메인: 주간 시간표 뷰. 모든 팀 예약을 색상별로 표시. 주 이동(이전/다음) |
 | `/reserve` | 예약 생성: 네이버 로그인 → 팀 선택 → 날짜 + 시작/종료 시간 직접 입력 → 확인 |
-| `/reservations/[id]` | 예약 상세 + 취소 (예약자 본인만) |
-| `/admin` | (후순위) 팀 관리, 예약 강제 삭제 |
+| `/reservations/[id]` | 예약 상세 + 취소 (예약자 본인만), `/reservations/[id]/edit` 수정 |
+| `/teams` | 팀 게시판: 팀 목록 (곡/팀원/작성자) |
+| `/teams/new` | 팀 만들기 (네이버 로그인 필요) |
+| `/teams/[id]` | 팀 상세: 곡/팀원 + 다가오는 예약, `/teams/[id]/edit` 수정 (로그인 필요) |
+| `/admin` | (후순위) 예약/팀 강제 삭제 |
 
 메인 화면의 시간표는 세로축 = 시간(예: 09:00~24:00), 가로축 = 요일 형태의 주간 그리드로, 각 예약 블록에 팀명이 팀 색상으로 표시된다. 모바일에서는 일간 뷰 또는 리스트 뷰로 전환.
 
@@ -78,8 +87,11 @@
 |--------|------|------|
 | GET | `/api/reservations?from=&to=` | 기간 내 예약 목록 (로그인 불필요) |
 | POST | `/api/reservations` | 예약 생성 (로그인 필요 / teamId, startsAt, endsAt, note) |
-| DELETE | `/api/reservations/[id]` | 예약 취소 (로그인 필요, 예약자 본인만) |
+| PATCH/DELETE | `/api/reservations/[id]` | 예약 수정/취소 (예약자 본인만) |
 | GET | `/api/teams` | 팀 목록 |
+| POST | `/api/teams` | 팀 만들기 (로그인 필요 / name, song?, members?) |
+| PATCH | `/api/teams/[id]` | 팀 수정 (로그인한 누구나) |
+| DELETE | `/api/teams/[id]` | 팀 삭제 (작성자 본인만) |
 | GET/POST | `/api/auth/[...nextauth]` | Auth.js 로그인/콜백/로그아웃 처리 |
 
 - 세션 확인(`auth()`)은 서버에서만 수행.
@@ -104,8 +116,9 @@
 7. Vercel 배포 ✅ — https://sorireserve.vercel.app (GitHub main 푸시 시 자동 배포)
 
 ### Phase 2 — 개선
+- **팀 생성 게시판** ✅ — 곡/팀원을 적어 팀을 만들면 예약 페이지에서 바로 선택 가능
 - 모바일 대응 (일간/리스트 뷰)
-- 관리자 페이지 (팀 추가, 비밀번호 초기화, 예약 강제 취소)
+- 관리자 페이지 (예약/팀 강제 삭제)
 - 예약 규칙 강화 (팀별 주간 최대 시간 등)
 - **동아리 카페 글 목록 위젯**: 네이버 카페 최신 글(공지)을 메인 화면에 표시
   - 카페가 공개인 경우: 서버에서 카페 글 목록 JSON을 가져와 10분 캐싱 후 표시 (비공식 엔드포인트라 구조 변경 시 유지보수 필요)

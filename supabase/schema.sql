@@ -5,10 +5,14 @@
 create extension if not exists btree_gist;
 
 create table teams (
-  id         uuid primary key default gen_random_uuid(),
-  name       text not null unique,
-  color      text not null default '#6366f1',
-  created_at timestamptz not null default now()
+  id              uuid primary key default gen_random_uuid(),
+  name            text not null unique,
+  color           text not null default '#6366f1',
+  song            text,            -- 하고 싶은 곡 (팀 게시판)
+  members         text,            -- 팀원 소개 (자유 입력)
+  created_by      text,            -- 작성자 네이버 ID (null = 관리자가 등록한 팀)
+  created_by_name text,            -- 표시용 작성자 이름
+  created_at      timestamptz not null default now()
 );
 
 create table reservations (
@@ -43,3 +47,10 @@ create index reservations_starts_at_idx on reservations (starts_at);
 -- alter table reservations
 --   add column created_by text not null default '',
 --   add column created_by_name text not null default '';
+
+-- [마이그레이션] 팀 게시판 기능 — teams 테이블이 이미 있다면 아래만 실행:
+-- alter table teams
+--   add column song text,
+--   add column members text,
+--   add column created_by text,
+--   add column created_by_name text;
