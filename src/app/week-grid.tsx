@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DAY_START_HOUR, DAY_END_HOUR, TIME_ZONE } from "@/lib/constants";
@@ -37,6 +37,8 @@ const weekdayOf = (day: string) =>
   WEEKDAYS[new Date(day + "T00:00:00Z").getUTCDay()];
 
 type Drag = { day: number; y0: number; y1: number };
+/** 드래그/탭으로 고른 시간 — 예약하기 버튼을 누르기 전까지 유지 */
+type Sel = { day: number; m0: number; m1: number };
 
 /** 드래그 픽셀 범위 → 스냅된 [시작분, 끝분] (그리드 시작 기준) */
 function snapRange(drag: Drag): [number, number] {
@@ -64,6 +66,7 @@ export default function WeekGrid({
 }) {
   const router = useRouter();
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [sel, setSel] = useState<Sel | null>(null);
   const colRefs = useRef<(HTMLDivElement | null)[]>([]);
   const dayColRef = useRef<HTMLDivElement | null>(null);
 
@@ -72,6 +75,11 @@ export default function WeekGrid({
     const i = days.indexOf(today);
     return i >= 0 ? i : 0;
   });
+
+  // 주가 바뀌면 이전 주에서 고른 시간은 무효
+  useEffect(() => {
+    setSel(null);
+  }, [days]);
 
   // 예약을 날짜별 블록(top/height px)으로 변환. 표시 범위 밖은 잘라낸다.
   const blocksByDay = days.map((day) => {
@@ -106,12 +114,12 @@ export default function WeekGrid({
     if (!drag) return;
     const [m0, m1] = snapRange(drag);
     setDrag(null);
-    pushReserve(drag.day, m0, m1);
+    setSel({ day: drag.day, m0, m1 }); // 바로 이동하지 않고 예약하기 버튼을 띄운다
   }
 
-  /** 모바일: 빈 시간 탭 → 30분 스냅 위치부터 1시간 예약 폼으로 */
+  /** 모바일: 빈 시간 탭 → 30분 스냅 위치부터 1시간 선택 (버튼으로 확정) */
   function handleDayTap(e: React.MouseEvent) {
-    if ((e.target as HTMLElement).closest("a")) return;
+    if ((e.target as HTMLElement).closest("a, button")) return;
     const rect = dayColRef.current!.getBoundingClientRect();
     const y = clamp(e.clientY - rect.top, 0, COL_HEIGHT);
     const m0 = clamp(
@@ -119,8 +127,45 @@ export default function WeekGrid({
       0,
       TOTAL_MIN - 30
     );
-    pushReserve(selected, m0, Math.min(m0 + 60, TOTAL_MIN));
+    setSel({ day: selected, m0, m1: Math.min(m0 + 60, TOTAL_MIN) });
   }
+
+  /** 고른 시간 표시 + 예약하기 버튼 (데스크톱/모바일 공용) */
+  const renderSelection = (dayIdx: number) => {
+    if (!sel || sel.day !== dayIdx || drag) return null;
+    const top = (sel.m0 / 60) * HOUR_PX;
+    const height = Math.max(((sel.m1 - sel.m0) / 60) * HOUR_PX, 4);
+    const buttonBelow = top + height + 44 <= COL_HEIGHT;
+    return (
+      <div
+        className="pointer-events-none absolute inset-x-0.5 z-30"
+        style={{ top, height }}
+      >
+        <div className="absolute inset-0 rounded-lg border-2 border-[var(--brand-mid)] bg-violet-300/30 px-1.5 text-[10px] font-semibold text-[var(--brand-text)] md:text-[12px]">
+          {fmtTime(DAY_START_HOUR * 60 + sel.m0)}~
+          {fmtTime(DAY_START_HOUR * 60 + sel.m1)}
+        </div>
+        <div
+          className={`absolute inset-x-0 flex justify-center ${
+            buttonBelow ? "top-full mt-1.5" : "bottom-full mb-1.5"
+          }`}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              pushReserve(sel.day, sel.m0, sel.m1);
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="pointer-events-auto whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white shadow-md transition-all hover:opacity-90 active:scale-[0.98]"
+            style={{ background: "var(--brand-gradient)" }}
+          >
+            예약하기
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const renderBlocks = (dayIdx: number) =>
     blocksByDay[dayIdx].map(({ r, top, height }) => (
@@ -207,11 +252,12 @@ export default function WeekGrid({
           >
             {hourRows}
             {renderBlocks(selected)}
+            {renderSelection(selected)}
           </div>
         </div>
         <p className="border-t border-[var(--border)] px-3 py-2.5 text-xs text-zinc-400">
-          빈 시간을 탭하면 그 시간으로 예약 화면이 열립니다. 예약 블록을 누르면
-          상세 화면으로 이동합니다.
+          빈 시간을 탭해 시간을 고른 뒤 예약하기 버튼을 누르세요. 예약 블록을
+          누르면 상세 화면으로 이동합니다.
         </p>
       </div>
 
@@ -268,8 +314,9 @@ export default function WeekGrid({
                 style={{ height: COL_HEIGHT }}
                 onMouseDown={(e) => {
                   if (e.button !== 0) return;
-                  if ((e.target as HTMLElement).closest("a")) return;
+                  if ((e.target as HTMLElement).closest("a, button")) return;
                   e.preventDefault();
+                  setSel(null); // 새로 드래그하면 이전 선택은 버린다
                   const y = colY(i, e.clientY);
                   setDrag({ day: i, y0: y, y1: y });
                 }}
@@ -294,13 +341,16 @@ export default function WeekGrid({
                       </div>
                     );
                   })()}
+
+                {/* 확정 대기 중인 선택 + 예약하기 버튼 */}
+                {renderSelection(i)}
               </div>
             ))}
           </div>
         </div>
         <p className="border-t border-[var(--border)] px-3 py-2.5 text-xs text-zinc-400">
-          빈 시간을 드래그(또는 클릭)하면 그 시간으로 예약 화면이 열립니다.
-          예약 블록을 누르면 상세/취소 화면으로 이동합니다.
+          빈 시간을 드래그(또는 클릭)해 시간을 고른 뒤 예약하기 버튼을
+          누르세요. 예약 블록을 누르면 상세/취소 화면으로 이동합니다.
         </p>
       </div>
     </div>
