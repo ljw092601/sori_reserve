@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { DURATION_OPTIONS } from "@/lib/constants";
 import { kstToIso } from "@/lib/dates";
 import type { Team } from "@/lib/types";
+import TeamPicker from "@/components/team-picker";
 
 const fmtTime = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
@@ -34,11 +35,19 @@ export default function EditForm({
   const [note, setNote] = useState(initial.note);
 
   useEffect(() => {
+    // 모집완료된 팀 + 이 예약의 현재 팀(모집중이어도 유지)만 선택 가능
     fetch("/api/teams")
       .then((res) => res.json())
-      .then((data) => setTeams(data.teams ?? []))
+      .then((data) => {
+        const all = (data.teams ?? []) as Team[];
+        setTeams(
+          all.filter(
+            (t) => t.status === "closed" || t.id === initial.teamId
+          )
+        );
+      })
       .catch(() => setError("팀 목록을 불러오지 못했습니다."));
-  }, []);
+  }, [initial.teamId]);
 
   function applyDuration(min: number) {
     if (!start) return;
@@ -49,6 +58,10 @@ export default function EditForm({
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    if (!teamId) {
+      setError("팀을 선택해주세요.");
+      return;
+    }
     setSubmitting(true);
 
     const res = await fetch(`/api/reservations/${reservationId}`, {
@@ -79,21 +92,10 @@ export default function EditForm({
     >
       <h2 className="font-semibold">예약 수정</h2>
 
-      <label className="flex flex-col gap-1 text-sm font-medium">
-        팀
-        <select
-          value={teamId}
-          onChange={(e) => setTeamId(e.target.value)}
-          required
-          className="rounded-lg border border-zinc-300 bg-white p-2.5"
-        >
-          {teams.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="flex flex-col gap-1 text-sm font-medium">
+        팀 (모집완료된 팀만)
+        <TeamPicker teams={teams} value={teamId} onChange={setTeamId} />
+      </div>
 
       <label className="flex flex-col gap-1 text-sm font-medium">
         날짜

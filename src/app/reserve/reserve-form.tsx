@@ -2,9 +2,11 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { DURATION_OPTIONS, RULES } from "@/lib/constants";
 import { kstDateString, kstToIso } from "@/lib/dates";
 import type { Team } from "@/lib/types";
+import TeamPicker from "@/components/team-picker";
 
 const fmtTime = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
@@ -13,6 +15,7 @@ export default function ReserveForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [teams, setTeams] = useState<Team[]>([]);
+  const [teamId, setTeamId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,7 +25,8 @@ export default function ReserveForm() {
   const [end, setEnd] = useState(searchParams.get("end") ?? "");
 
   useEffect(() => {
-    fetch("/api/teams")
+    // 모집이 끝난 팀만 예약할 수 있다
+    fetch("/api/teams?status=closed")
       .then((res) => res.json())
       .then((data) => setTeams(data.teams ?? []))
       .catch(() => setError("팀 목록을 불러오지 못했습니다."));
@@ -38,6 +42,10 @@ export default function ReserveForm() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    if (!teamId) {
+      setError("팀을 선택해주세요.");
+      return;
+    }
     setSubmitting(true);
 
     const form = new FormData(e.currentTarget);
@@ -45,7 +53,7 @@ export default function ReserveForm() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        teamId: form.get("teamId"),
+        teamId,
         startsAt: kstToIso(date, start),
         endsAt: kstToIso(date, end),
         note: form.get("note"),
@@ -69,21 +77,19 @@ export default function ReserveForm() {
       <h1 className="mb-6 text-xl font-bold">동아리방 예약</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm font-medium">
-          팀
-          <select
-            name="teamId"
-            required
-            className="rounded-lg border border-zinc-300 bg-white p-2.5"
-          >
-            <option value="">팀을 선택하세요</option>
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex flex-col gap-1 text-sm font-medium">
+          팀 (모집완료된 팀만)
+          <TeamPicker teams={teams} value={teamId} onChange={setTeamId} />
+          {teams.length === 0 && (
+            <p className="text-xs font-normal text-zinc-500">
+              모집완료된 팀이 아직 없어요.{" "}
+              <Link href="/teams" className="underline">
+                팀 모집 게시판
+              </Link>
+              에서 팀을 완성해주세요.
+            </p>
+          )}
+        </div>
 
         <label className="flex flex-col gap-1 text-sm font-medium">
           날짜

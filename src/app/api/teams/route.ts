@@ -7,13 +7,22 @@ import { parseMemberEntries } from "@/lib/validate";
 const TEAM_SELECT =
   "id, name, color, status, members, content, created_by, created_by_name, created_at";
 
-/** GET /api/teams — 모집글(팀) 목록 (로그인 불필요) */
-export async function GET() {
+/**
+ * GET /api/teams — 모집글(팀) 목록 (로그인 불필요)
+ * ?status=recruiting|closed 로 모집 상태 필터 (예약 폼은 closed만 사용)
+ */
+export async function GET(req: NextRequest) {
+  const status = req.nextUrl.searchParams.get("status");
+
   const supabase = supabaseAdmin();
-  const { data, error } = await supabase
+  let query = supabase
     .from("teams")
     .select(TEAM_SELECT)
     .order("created_at", { ascending: false });
+  if (status === "recruiting" || status === "closed") {
+    query = query.eq("status", status);
+  }
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
