@@ -138,13 +138,19 @@ export default function WeekGrid({
     ));
 
   const hourRows = HOURS.map((h) => (
-    <div key={h} className="h-12 border-b border-[var(--border)]" />
+    // 높이는 HOUR_PX 고정 — rem(h-12)을 쓰면 데스크톱 글자 확대 시 드래그 계산과 어긋난다
+    <div
+      key={h}
+      className="border-b border-[var(--border)]"
+      style={{ height: HOUR_PX }}
+    />
   ));
 
   const timeLabels = HOURS.map((h) => (
     <div
       key={h}
-      className="h-12 pr-2 pt-0.5 text-right text-[10px] text-zinc-400 font-medium md:text-[12px]"
+      className="pr-2 pt-0.5 text-right text-[10px] text-zinc-400 font-medium md:text-[12px]"
+      style={{ height: HOUR_PX }}
     >
       {h}:00
     </div>
