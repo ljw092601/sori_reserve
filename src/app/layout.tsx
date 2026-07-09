@@ -25,7 +25,10 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900">
         <header className="border-b border-zinc-200 bg-white">
           <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between px-4">
-            <Link href="/" className="flex items-center gap-2 text-lg font-bold">
+            <Link
+              href="/"
+              className="flex shrink-0 items-center gap-2 whitespace-nowrap text-lg font-bold"
+            >
               <Image
                 src="/logo.png"
                 alt="소리 로고"
@@ -33,18 +36,20 @@ export default async function RootLayout({
                 height={28}
                 priority
               />
-              소리터 동아리방 예약
+              {/* 좁은 화면에서는 짧은 이름만 표시 */}
+              <span className="sm:hidden">소리터</span>
+              <span className="max-sm:hidden">소리터 동아리방 예약</span>
             </Link>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Link
                 href="/teams"
-                className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
+                className="shrink-0 text-sm font-medium text-zinc-600 hover:text-zinc-900"
               >
                 팀 모집
               </Link>
               <Link
                 href="/reserve"
-                className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+                className="shrink-0 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 sm:px-4"
               >
                 예약하기
               </Link>
@@ -58,7 +63,7 @@ export default async function RootLayout({
                 >
                   <Link
                     href="/account"
-                    className="text-sm text-zinc-600 hover:underline"
+                    className="max-w-20 truncate text-sm text-zinc-600 hover:underline sm:max-w-none"
                     title="계정 설정"
                   >
                     {name}
@@ -74,8 +79,9 @@ export default async function RootLayout({
                     await signIn("naver");
                   }}
                 >
-                  <button className="rounded-lg bg-[#03C75A] px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-                    네이버 로그인
+                  <button className="whitespace-nowrap rounded-lg bg-[#03C75A] px-3 py-2 text-sm font-medium text-white hover:opacity-90 sm:px-4">
+                    <span className="sm:hidden">로그인</span>
+                    <span className="max-sm:hidden">네이버 로그인</span>
                   </button>
                 </form>
               )}
