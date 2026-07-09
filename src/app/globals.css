@@ -1,26 +1,74 @@
 @import "tailwindcss";
 
+/* ─── Noto Sans KR via next/font is applied in layout.tsx ─── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f7fc;
+  --foreground: #1a1a2e;
+
+  /* Brand palette */
+  --brand-from: #6d28d9;   /* violet-700 */
+  --brand-to:   #4f46e5;   /* indigo-600 */
+  --brand-mid:  #7c3aed;   /* violet-600 */
+  --brand-soft: #ede9fe;   /* violet-100 */
+  --brand-text: #5b21b6;   /* violet-800 */
+
+  /* Surface */
+  --surface:        #ffffff;
+  --surface-raised: #f5f3ff; /* violet-50 */
+  --border:         #e4e0f7;
+
+  /* Accent */
+  --accent-green:  #059669;  /* emerald-600 */
+  --accent-amber:  #d97706;  /* amber-600 */
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background:    var(--background);
+  --color-foreground:    var(--foreground);
+  --color-surface:       var(--surface);
+  --color-surface-raised:var(--surface-raised);
+  --color-border:        var(--border);
+  --color-brand-from:    var(--brand-from);
+  --color-brand-to:      var(--brand-to);
+  --color-brand-mid:     var(--brand-mid);
+  --color-brand-soft:    var(--brand-soft);
+  --color-brand-text:    var(--brand-text);
+  --font-sans: var(--font-noto, "Noto Sans KR", Arial, sans-serif);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ─── Base ─── */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* 데스크톱에서는 기준 글자 크기를 키운다 (rem 기반이라 전체가 비례 확대) */
+@media (min-width: 768px) {
+  html {
+    font-size: 17.5px;
+  }
+}
+
+/* ─── Smooth page transitions ─── */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── Gradient helper (usable via [background:var(--brand-gradient)]) ─── */
+:root {
+  --brand-gradient: linear-gradient(135deg, var(--brand-from), var(--brand-to));
+}
+
+/* ─── Scrollbar thin in week grid ─── */
+.week-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.week-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.week-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
 }

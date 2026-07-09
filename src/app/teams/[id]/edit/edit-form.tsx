@@ -53,10 +53,10 @@ export default function EditForm({
 
   return (
     <div className="mx-auto w-full max-w-md">
-      <h1 className="mb-6 text-xl font-bold">모집글 수정</h1>
+      <h1 className="mb-6 text-xl font-bold text-[var(--foreground)]">모집글 수정</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        <label className="flex flex-col gap-1 text-sm font-semibold">
           곡 제목
           <input
             type="text"
@@ -64,7 +64,7 @@ export default function EditForm({
             maxLength={50}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white p-2.5"
+            className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
           />
         </label>
 
@@ -72,27 +72,26 @@ export default function EditForm({
 
         <MembersInput value={members} onChange={setMembers} />
 
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        <label className="flex flex-col gap-1 text-sm font-semibold">
           모집 글 (선택)
           <textarea
             rows={5}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={"예: 드럼, 베이스 구합니다!\n연습은 주 1회 예정이에요."}
-            className="rounded-lg border border-zinc-300 bg-white p-2.5"
+            className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
           />
         </label>
 
         {error && (
-          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-            {error}
-          </p>
+          <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>
         )}
 
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-zinc-900 p-3 font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+          className="rounded-xl p-3 font-semibold text-white shadow-md transition-all hover:opacity-90 hover:shadow-lg active:scale-[0.99] disabled:opacity-50"
+          style={{ background: "var(--brand-gradient)" }}
         >
           {submitting ? "저장 중..." : "수정 저장"}
         </button>

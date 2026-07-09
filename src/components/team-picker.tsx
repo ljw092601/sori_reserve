@@ -50,17 +50,17 @@ export default function TeamPicker({
         placeholder={
           teams.length > 0 ? "곡 제목으로 검색" : "선택할 수 있는 팀이 없어요"
         }
-        className="w-full rounded-lg border border-zinc-300 bg-white p-2.5"
+        className="w-full rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
       />
       {selected && !open && (
         <span
-          className="pointer-events-none absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full"
+          className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full shadow-sm ring-2 ring-white"
           style={{ backgroundColor: selected.color }}
         />
       )}
 
       {open && (
-        <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
+        <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-xl border border-[var(--border)] bg-white py-1 shadow-lg">
           {filtered.length > 0 ? (
             filtered.map((t) => (
               <li key={t.id}>
@@ -71,10 +71,10 @@ export default function TeamPicker({
                     e.preventDefault();
                     pick(t);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-zinc-100"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--brand-soft)] transition-colors"
                 >
                   <span
-                    className="h-3 w-3 shrink-0 rounded-full"
+                    className="h-3.5 w-3.5 shrink-0 rounded-full shadow-sm ring-1 ring-white"
                     style={{ backgroundColor: t.color }}
                   />
                   <span className="truncate">{t.name}</span>

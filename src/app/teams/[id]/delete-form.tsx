@@ -39,14 +39,14 @@ export default function DeleteForm({
   return (
     <div className="mt-3">
       {error && (
-        <p className="mb-2 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+        <p className="mb-2 rounded-xl bg-red-50 p-3 text-sm text-red-600">
           {error}
         </p>
       )}
       <button
         onClick={handleDelete}
         disabled={deleting}
-        className="w-full rounded-lg border border-red-300 p-3 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+        className="w-full rounded-xl border border-red-300 p-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
       >
         {deleting ? "삭제 중..." : "모집글 삭제"}
       </button>

@@ -76,16 +76,17 @@ export default function ReserveForm() {
 
   return (
     <div className="mx-auto w-full max-w-md">
-      <h1 className="mb-6 text-xl font-bold">동아리방 예약</h1>
+      <h1 className="mb-6 text-xl font-bold text-[var(--foreground)]">동아리방 예약</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1 text-sm font-medium">
+        {/* 팀 선택 */}
+        <div className="flex flex-col gap-1 text-sm font-semibold">
           팀 (모집완료된 팀만)
           <TeamPicker teams={teams} value={teamId} onChange={setTeamId} />
           {teams.length === 0 && (
             <p className="text-xs font-normal text-zinc-500">
               모집완료된 팀이 아직 없어요.{" "}
-              <Link href="/teams" className="underline">
+              <Link href="/teams" className="text-[var(--brand-text)] underline">
                 팀 모집 게시판
               </Link>
               에서 팀을 완성해주세요.
@@ -93,7 +94,8 @@ export default function ReserveForm() {
           )}
         </div>
 
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        {/* 날짜 */}
+        <label className="flex flex-col gap-1 text-sm font-semibold">
           날짜
           <input
             type="date"
@@ -102,12 +104,13 @@ export default function ReserveForm() {
             min={today}
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white p-2.5"
+            className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
           />
         </label>
 
+        {/* 시간 */}
         <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1 text-sm font-medium">
+          <label className="flex flex-col gap-1 text-sm font-semibold">
             시작 시간
             <input
               type="time"
@@ -115,10 +118,10 @@ export default function ReserveForm() {
               required
               value={start}
               onChange={(e) => setStart(e.target.value)}
-              className="rounded-lg border border-zinc-300 bg-white p-2.5"
+              className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm font-medium">
+          <label className="flex flex-col gap-1 text-sm font-semibold">
             종료 시간
             <input
               type="time"
@@ -126,12 +129,12 @@ export default function ReserveForm() {
               required
               value={end}
               onChange={(e) => setEnd(e.target.value)}
-              className="rounded-lg border border-zinc-300 bg-white p-2.5"
+              className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
             />
           </label>
         </div>
 
-        {/* 시작 시간 기준으로 종료 시간을 빠르게 지정 */}
+        {/* 시간 퀵-선택 칩 */}
         <div className="flex flex-wrap gap-1.5">
           {DURATION_OPTIONS.map(({ label, min }) => (
             <button
@@ -139,19 +142,20 @@ export default function ReserveForm() {
               type="button"
               onClick={() => applyDuration(min)}
               disabled={!start}
-              className="rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-600 hover:border-zinc-500 hover:bg-zinc-100 disabled:opacity-40"
+              className="rounded-full border border-[var(--border)] bg-white px-3 py-1 text-xs font-medium text-[var(--brand-text)] hover:border-[var(--brand-mid)] hover:bg-[var(--brand-soft)] transition-colors disabled:opacity-40"
             >
               {label}
             </button>
           ))}
         </div>
 
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        {/* 반복 */}
+        <label className="flex flex-col gap-1 text-sm font-semibold">
           매주 반복
           <select
             value={repeatWeeks}
             onChange={(e) => setRepeatWeeks(Number(e.target.value))}
-            className="rounded-lg border border-zinc-300 bg-white p-2.5"
+            className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
           >
             <option value={1}>반복 안 함</option>
             {Array.from(
@@ -171,26 +175,26 @@ export default function ReserveForm() {
           )}
         </label>
 
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        {/* 메모 */}
+        <label className="flex flex-col gap-1 text-sm font-semibold">
           메모 (선택)
           <input
             type="text"
             name="note"
             placeholder="예: 정기합주, 공연연습"
-            className="rounded-lg border border-zinc-300 bg-white p-2.5"
+            className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
           />
         </label>
 
         {error && (
-          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-            {error}
-          </p>
+          <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>
         )}
 
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-zinc-900 p-3 font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+          className="rounded-xl p-3 font-semibold text-white shadow-md transition-all hover:opacity-90 hover:shadow-lg active:scale-[0.99] disabled:opacity-50"
+          style={{ background: "var(--brand-gradient)" }}
         >
           {submitting ? "예약 중..." : "예약하기"}
         </button>

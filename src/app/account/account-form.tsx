@@ -40,9 +40,9 @@ export default function AccountForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-5"
+      className="flex flex-col gap-4 rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm"
     >
-      <label className="flex flex-col gap-1 text-sm font-medium">
+      <label className="flex flex-col gap-1 text-sm font-semibold">
         닉네임
         <input
           type="text"
@@ -50,15 +50,15 @@ export default function AccountForm({
           maxLength={20}
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-white p-2.5"
+          className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
         />
       </label>
 
       {error && (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>
+        <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>
       )}
       {saved && (
-        <p className="rounded-lg bg-green-50 p-3 text-sm text-green-700">
+        <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">
           저장했습니다. 예약·모집글·댓글의 이름도 함께 바뀌었어요.
         </p>
       )}
@@ -66,7 +66,8 @@ export default function AccountForm({
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-lg bg-zinc-900 p-3 font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+        className="rounded-xl p-3 font-semibold text-white shadow-md transition-all hover:opacity-90 hover:shadow-lg active:scale-[0.99] disabled:opacity-50"
+        style={{ background: "var(--brand-gradient)" }}
       >
         {submitting ? "저장 중..." : "저장"}
       </button>

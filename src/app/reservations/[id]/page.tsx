@@ -41,24 +41,40 @@ export default async function ReservationDetailPage({
 
   return (
     <div className="mx-auto w-full max-w-md">
-      <h1 className="mb-6 text-xl font-bold">예약 상세</h1>
+      <h1 className="mb-6 text-xl font-bold text-[var(--foreground)]">예약 상세</h1>
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-5">
-        <div className="mb-3 flex items-center gap-2">
+      <div className="rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm">
+        {/* 팀 헤더 */}
+        <div className="mb-4 flex items-center gap-2">
           <span
-            className="h-3 w-3 rounded-full"
+            className="h-4 w-4 rounded-full shadow-sm ring-2 ring-white"
             style={{ backgroundColor: team?.color }}
           />
-          <span className="font-semibold">{team?.name}</span>
-        </div>
-        <dl className="flex flex-col gap-1 text-sm text-zinc-600">
-          <div>시작: {fmt(r.starts_at)}</div>
-          <div>종료: {fmt(r.ends_at)}</div>
-          <div>예약자: {r.created_by_name}</div>
-          {r.note && <div>메모: {r.note}</div>}
+          <span className="font-bold text-[var(--foreground)]">{team?.name}</span>
           {r.series_id && (
-            <div className="mt-1 w-fit rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">
-              🔁 매주 반복 예약
+            <span className="ml-auto rounded-full bg-[var(--brand-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--brand-text)]">
+              🔁 반복 예약
+            </span>
+          )}
+        </div>
+
+        <dl className="flex flex-col gap-2 text-sm text-zinc-600">
+          <div className="flex gap-2">
+            <dt className="w-14 shrink-0 font-medium text-zinc-400">시작</dt>
+            <dd>{fmt(r.starts_at)}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="w-14 shrink-0 font-medium text-zinc-400">종료</dt>
+            <dd>{fmt(r.ends_at)}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="w-14 shrink-0 font-medium text-zinc-400">예약자</dt>
+            <dd>{r.created_by_name}</dd>
+          </div>
+          {r.note && (
+            <div className="flex gap-2">
+              <dt className="w-14 shrink-0 font-medium text-zinc-400">메모</dt>
+              <dd>{r.note}</dd>
             </div>
           )}
         </dl>
@@ -68,7 +84,8 @@ export default async function ReservationDetailPage({
         <>
           <Link
             href={`/reservations/${r.id}/edit`}
-            className="mt-6 block rounded-lg bg-zinc-900 p-3 text-center font-medium text-white hover:bg-zinc-700"
+            className="mt-6 block rounded-xl p-3 text-center font-semibold text-white shadow-md transition-all hover:opacity-90 hover:shadow-lg active:scale-[0.99]"
+            style={{ background: "var(--brand-gradient)" }}
           >
             수정하기
           </Link>

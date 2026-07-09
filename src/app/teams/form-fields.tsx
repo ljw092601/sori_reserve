@@ -13,17 +13,22 @@ export function StatusRadio({
   onChange: (v: "recruiting" | "closed") => void;
 }) {
   return (
-    <fieldset className="flex flex-col gap-1 text-sm font-medium">
+    <fieldset className="flex flex-col gap-1 text-sm font-semibold">
       <legend className="mb-1">모집 상태</legend>
       <div className="flex gap-2">
         {(["recruiting", "closed"] as const).map((s) => (
           <label
             key={s}
-            className={`flex-1 cursor-pointer rounded-lg border p-2.5 text-center text-sm font-medium ${
+            className={`flex-1 cursor-pointer rounded-xl border p-2.5 text-center text-sm font-semibold transition-all ${
               value === s
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-300 bg-white text-zinc-600 hover:border-zinc-500"
+                ? "border-transparent text-white shadow-md"
+                : "border-[var(--border)] bg-white text-zinc-600 hover:border-[var(--brand-mid)] hover:text-[var(--brand-text)]"
             }`}
+            style={
+              value === s
+                ? { background: "var(--brand-gradient)" }
+                : undefined
+            }
           >
             <input
               type="radio"
@@ -75,7 +80,7 @@ function MemberRow({
         <select
           value={custom ? CUSTOM : row.session}
           onChange={(e) => handleSelect(e.target.value)}
-          className="w-0 flex-1 rounded-lg border border-zinc-300 bg-white p-2.5"
+          className="w-0 flex-1 rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
         >
           <option value="">세션 선택</option>
           {SESSION_PRESETS.map((s) => (
@@ -91,13 +96,13 @@ function MemberRow({
           onChange={(e) => onUpdate({ name: e.target.value })}
           maxLength={20}
           placeholder="이름 (비우면 모집중)"
-          className="w-0 flex-1 rounded-lg border border-zinc-300 bg-white p-2.5"
+          className="w-0 flex-1 rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
         />
         <button
           type="button"
           onClick={onRemove}
           aria-label="팀원 줄 삭제"
-          className="shrink-0 rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-400 hover:border-red-300 hover:text-red-500"
+          className="shrink-0 rounded-xl border border-[var(--border)] px-3 py-2.5 text-zinc-400 hover:border-red-300 hover:text-red-500 transition-colors"
         >
           ✕
         </button>
@@ -109,7 +114,7 @@ function MemberRow({
           onChange={(e) => onUpdate({ session: e.target.value })}
           maxLength={20}
           placeholder="세션 직접 입력 (예: 퍼커션)"
-          className="rounded-lg border border-zinc-300 bg-white p-2.5"
+          className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
         />
       )}
     </div>
@@ -129,7 +134,7 @@ export function MembersInput({
   onChange: (rows: MemberEntry[]) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1 text-sm font-medium">
+    <div className="flex flex-col gap-1 text-sm font-semibold">
       <span>팀원</span>
       <div className="flex flex-col gap-2">
         {value.map((row, i) => (
@@ -147,7 +152,7 @@ export function MembersInput({
         <button
           type="button"
           onClick={() => onChange([...value, { session: "", name: "" }])}
-          className="rounded-lg border border-dashed border-zinc-300 p-2.5 text-sm text-zinc-500 hover:border-zinc-500 hover:text-zinc-700"
+          className="rounded-xl border border-dashed border-[var(--border)] p-2.5 text-sm font-normal text-zinc-500 hover:border-[var(--brand-mid)] hover:text-[var(--brand-text)] transition-colors"
         >
           + 팀원 추가
         </button>

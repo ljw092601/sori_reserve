@@ -38,14 +38,14 @@ export default function CancelForm({
   }
 
   return (
-    <div className="mt-6 flex flex-col gap-3">
+    <div className="mt-4 flex flex-col gap-3">
       {error && (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>
+        <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>
       )}
       <button
         onClick={() => handleCancel(false)}
         disabled={submitting}
-        className="rounded-lg border border-red-300 p-3 font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+        className="rounded-xl border border-red-300 p-3 font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
       >
         {submitting ? "취소 중..." : isSeries ? "이 예약만 취소" : "예약 취소하기"}
       </button>
@@ -53,7 +53,7 @@ export default function CancelForm({
         <button
           onClick={() => handleCancel(true)}
           disabled={submitting}
-          className="rounded-lg bg-red-600 p-3 font-medium text-white hover:bg-red-500 disabled:opacity-50"
+          className="rounded-xl bg-red-600 p-3 font-medium text-white hover:bg-red-500 transition-colors disabled:opacity-50"
         >
           {submitting ? "취소 중..." : "반복 예약 전체 취소"}
         </button>

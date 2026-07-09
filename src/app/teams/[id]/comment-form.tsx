@@ -40,15 +40,16 @@ export default function CommentForm({ teamId }: { teamId: string }) {
         maxLength={500}
         rows={2}
         placeholder="예: 베이스 지원합니다!"
-        className="rounded-lg border border-zinc-300 bg-white p-2.5 text-sm"
+        className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
       />
       {error && (
-        <p className="rounded-lg bg-red-50 p-2 text-xs text-red-600">{error}</p>
+        <p className="rounded-xl bg-red-50 p-2 text-xs text-red-600">{error}</p>
       )}
       <button
         type="submit"
         disabled={submitting || !content.trim()}
-        className="self-end rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+        className="self-end rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 hover:shadow-md active:scale-95 disabled:opacity-50"
+        style={{ background: "var(--brand-gradient)" }}
       >
         {submitting ? "등록 중..." : "댓글 달기"}
       </button>

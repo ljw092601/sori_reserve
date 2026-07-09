@@ -45,8 +45,8 @@ export default async function Home({
     );
   } catch (e) {
     return (
-      <div className="rounded-xl border border-amber-300 bg-amber-50 p-6">
-        <h2 className="mb-2 font-semibold">⚙️ 설정이 필요합니다</h2>
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+        <h2 className="mb-2 font-semibold text-amber-800">⚙️ 설정이 필요합니다</h2>
         <p className="text-sm text-zinc-700">
           {process.env.NODE_ENV === "development" && e instanceof Error
             ? e.message
@@ -62,20 +62,21 @@ export default async function Home({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* 주 탐색 헤더 */}
       <div className="flex items-center justify-between">
-        <h1 className="font-semibold">
+        <h1 className="text-base font-bold text-[var(--foreground)] sm:text-lg">
           {fmtMD(days[0])} ~ {fmtMD(days[6])}
         </h1>
-        <nav className="flex gap-1 text-sm">
+        <nav className="flex gap-1.5 text-sm">
           <Link
             href={`/?d=${addDays(weekStart, -7)}`}
-            className="rounded-lg border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100"
+            className="rounded-xl border border-[var(--border)] bg-white px-3 py-1.5 font-medium text-[var(--brand-text)] shadow-sm hover:bg-[var(--brand-soft)] transition-colors"
           >
             ← 이전 주
           </Link>
           <Link
             href={`/?d=${addDays(weekStart, 7)}`}
-            className="rounded-lg border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100"
+            className="rounded-xl border border-[var(--border)] bg-white px-3 py-1.5 font-medium text-[var(--brand-text)] shadow-sm hover:bg-[var(--brand-soft)] transition-colors"
           >
             다음 주 →
           </Link>

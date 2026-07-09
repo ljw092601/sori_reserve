@@ -128,8 +128,8 @@ export default function WeekGrid({
         key={r.id}
         href={`/reservations/${r.id}`}
         draggable={false}
-        className="absolute inset-x-0.5 z-10 overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight text-white hover:opacity-90"
-        style={{ top, height, backgroundColor: r.team?.color ?? "#71717a" }}
+        className="absolute inset-x-0.5 z-10 overflow-hidden rounded-lg px-2 py-1 text-[11px] leading-tight text-white shadow-md transition-opacity hover:opacity-80 md:text-[13px]"
+        style={{ top, height, backgroundColor: r.team?.color ?? "#7c3aed" }}
       >
         <span className="font-semibold">{r.team?.name}</span>{" "}
         {isoTime(r.starts_at)}~{isoTime(r.ends_at)}
@@ -138,47 +138,63 @@ export default function WeekGrid({
     ));
 
   const hourRows = HOURS.map((h) => (
-    <div key={h} className="h-12 border-b border-zinc-100" />
+    <div key={h} className="h-12 border-b border-[var(--border)]" />
   ));
 
   const timeLabels = HOURS.map((h) => (
     <div
       key={h}
-      className="h-12 pr-1.5 pt-0.5 text-right text-[10px] text-zinc-400"
+      className="h-12 pr-2 pt-0.5 text-right text-[10px] text-zinc-400 font-medium md:text-[12px]"
     >
       {h}:00
     </div>
   ));
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white">
+    <div className="rounded-2xl border border-[var(--border)] bg-white shadow-md overflow-hidden">
       {/* ── 모바일: 요일 탭 + 일간 뷰 ───────────────────────── */}
       <div className="md:hidden">
-        <div className="flex border-b border-zinc-200">
-          {days.map((day, i) => (
-            <button
-              key={day}
-              onClick={() => setSelected(i)}
-              className={`flex-1 flex-col py-2 text-center text-xs ${
-                i === selected
-                  ? "border-b-2 border-indigo-600 font-bold text-indigo-600"
-                  : day === today
-                    ? "font-semibold text-indigo-500"
-                    : "text-zinc-500"
-              }`}
-            >
-              <div>{weekdayOf(day)}</div>
-              <div className="text-sm">{+day.slice(8, 10)}</div>
-            </button>
-          ))}
+        {/* 요일 탭 바 */}
+        <div className="flex border-b border-[var(--border)] bg-[var(--surface-raised)]">
+          {days.map((day, i) => {
+            const isToday = day === today;
+            const isSelected = i === selected;
+            return (
+              <button
+                key={day}
+                onClick={() => setSelected(i)}
+                className={`flex flex-1 flex-col items-center py-2.5 text-xs transition-colors ${
+                  isSelected
+                    ? "border-b-2 border-[var(--brand-mid)] font-bold text-[var(--brand-mid)] bg-white"
+                    : isToday
+                      ? "font-semibold text-[var(--brand-text)]"
+                      : "text-zinc-400"
+                }`}
+              >
+                <span className="text-[11px]">{weekdayOf(day)}</span>
+                <span
+                  className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold leading-none ${
+                    isSelected
+                      ? "bg-[var(--brand-mid)] text-white"
+                      : isToday
+                        ? "text-[var(--brand-mid)]"
+                        : ""
+                  }`}
+                >
+                  {+day.slice(8, 10)}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
+        {/* 일간 타임그리드 */}
         <div className="grid grid-cols-[2.5rem_1fr]">
           <div>{timeLabels}</div>
           <div
             ref={dayColRef}
-            className={`relative border-l border-zinc-100 ${
-              days[selected] === today ? "bg-indigo-50/40" : ""
+            className={`relative border-l border-[var(--border)] ${
+              days[selected] === today ? "bg-violet-50/60" : ""
             }`}
             style={{ height: COL_HEIGHT }}
             onClick={handleDayTap}
@@ -187,7 +203,7 @@ export default function WeekGrid({
             {renderBlocks(selected)}
           </div>
         </div>
-        <p className="border-t border-zinc-100 px-3 py-2 text-xs text-zinc-400">
+        <p className="border-t border-[var(--border)] px-3 py-2.5 text-xs text-zinc-400">
           빈 시간을 탭하면 그 시간으로 예약 화면이 열립니다. 예약 블록을 누르면
           상세 화면으로 이동합니다.
         </p>
@@ -195,7 +211,7 @@ export default function WeekGrid({
 
       {/* ── 데스크톱: 주간 뷰 ─────────────────────────────── */}
       <div
-        className="hidden select-none overflow-x-auto md:block"
+        className="week-scroll hidden select-none overflow-x-auto md:block"
         onMouseMove={(e) =>
           drag && setDrag({ ...drag, y1: colY(drag.day, e.clientY) })
         }
@@ -204,18 +220,29 @@ export default function WeekGrid({
       >
         <div className="min-w-[760px]">
           {/* 요일 헤더 */}
-          <div className="grid grid-cols-[3rem_repeat(7,1fr)] border-b border-zinc-200">
+          <div className="grid grid-cols-[3rem_repeat(7,1fr)] border-b border-[var(--border)] bg-[var(--surface-raised)]">
             <div />
-            {days.map((day) => (
-              <div
-                key={day}
-                className={`py-2 text-center text-sm ${
-                  day === today ? "font-bold text-indigo-600" : "text-zinc-600"
-                }`}
-              >
-                {+day.slice(5, 7)}/{+day.slice(8, 10)} ({weekdayOf(day)})
-              </div>
-            ))}
+            {days.map((day) => {
+              const isToday = day === today;
+              return (
+                <div
+                  key={day}
+                  className={`py-3 text-center text-sm font-semibold ${
+                    isToday
+                      ? "text-[var(--brand-mid)]"
+                      : "text-zinc-500"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
+                      isToday ? "bg-[var(--brand-soft)]" : ""
+                    }`}
+                  >
+                    {+day.slice(5, 7)}/{+day.slice(8, 10)} ({weekdayOf(day)})
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           <div className="grid grid-cols-[3rem_repeat(7,1fr)]">
@@ -229,8 +256,8 @@ export default function WeekGrid({
                 ref={(el) => {
                   colRefs.current[i] = el;
                 }}
-                className={`relative cursor-crosshair border-l border-zinc-100 ${
-                  day === today ? "bg-indigo-50/40" : ""
+                className={`relative cursor-crosshair border-l border-[var(--border)] ${
+                  day === today ? "bg-violet-50/50" : ""
                 }`}
                 style={{ height: COL_HEIGHT }}
                 onMouseDown={(e) => {
@@ -250,7 +277,7 @@ export default function WeekGrid({
                     const [m0, m1] = snapRange(drag);
                     return (
                       <div
-                        className="pointer-events-none absolute inset-x-0.5 z-20 rounded-md border border-indigo-400 bg-indigo-300/40 px-1.5 text-[10px] font-medium text-indigo-800"
+                        className="pointer-events-none absolute inset-x-0.5 z-20 rounded-lg border border-[var(--brand-mid)] bg-violet-300/30 px-1.5 text-[10px] font-semibold text-[var(--brand-text)]"
                         style={{
                           top: (m0 / 60) * HOUR_PX,
                           height: Math.max(((m1 - m0) / 60) * HOUR_PX, 4),
@@ -265,7 +292,7 @@ export default function WeekGrid({
             ))}
           </div>
         </div>
-        <p className="border-t border-zinc-100 px-3 py-2 text-xs text-zinc-400">
+        <p className="border-t border-[var(--border)] px-3 py-2.5 text-xs text-zinc-400">
           빈 시간을 드래그(또는 클릭)하면 그 시간으로 예약 화면이 열립니다.
           예약 블록을 누르면 상세/취소 화면으로 이동합니다.
         </p>

@@ -88,45 +88,45 @@ export default function EditForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-6 flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-5"
+      className="mt-6 flex flex-col gap-4 rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm"
     >
-      <h2 className="font-semibold">예약 수정</h2>
+      <h2 className="font-bold text-[var(--foreground)]">예약 수정</h2>
 
-      <div className="flex flex-col gap-1 text-sm font-medium">
+      <div className="flex flex-col gap-1 text-sm font-semibold">
         팀 (모집완료된 팀만)
         <TeamPicker teams={teams} value={teamId} onChange={setTeamId} />
       </div>
 
-      <label className="flex flex-col gap-1 text-sm font-medium">
+      <label className="flex flex-col gap-1 text-sm font-semibold">
         날짜
         <input
           type="date"
           required
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-white p-2.5"
+          className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
         />
       </label>
 
       <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        <label className="flex flex-col gap-1 text-sm font-semibold">
           시작 시간
           <input
             type="time"
             required
             value={start}
             onChange={(e) => setStart(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white p-2.5"
+            className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        <label className="flex flex-col gap-1 text-sm font-semibold">
           종료 시간
           <input
             type="time"
             required
             value={end}
             onChange={(e) => setEnd(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white p-2.5"
+            className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
           />
         </label>
       </div>
@@ -138,32 +138,33 @@ export default function EditForm({
             type="button"
             onClick={() => applyDuration(min)}
             disabled={!start}
-            className="rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-600 hover:border-zinc-500 hover:bg-zinc-100 disabled:opacity-40"
+            className="rounded-full border border-[var(--border)] bg-white px-3 py-1 text-xs font-medium text-[var(--brand-text)] hover:border-[var(--brand-mid)] hover:bg-[var(--brand-soft)] transition-colors disabled:opacity-40"
           >
             {label}
           </button>
         ))}
       </div>
 
-      <label className="flex flex-col gap-1 text-sm font-medium">
+      <label className="flex flex-col gap-1 text-sm font-semibold">
         메모 (선택)
         <input
           type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="예: 정기합주, 공연연습"
-          className="rounded-lg border border-zinc-300 bg-white p-2.5"
+          className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
         />
       </label>
 
       {error && (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>
+        <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>
       )}
 
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-lg bg-zinc-900 p-3 font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+        className="rounded-xl p-3 font-semibold text-white shadow-md transition-all hover:opacity-90 hover:shadow-lg active:scale-[0.99] disabled:opacity-50"
+        style={{ background: "var(--brand-gradient)" }}
       >
         {submitting ? "저장 중..." : "수정 저장"}
       </button>

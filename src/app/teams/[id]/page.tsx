@@ -59,20 +59,21 @@ export default async function TeamDetailPage({
 
   return (
     <div className="mx-auto w-full max-w-md">
-      <h1 className="mb-6 text-xl font-bold">팀원 모집</h1>
+      <h1 className="mb-6 text-xl font-bold text-[var(--foreground)]">팀원 모집</h1>
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-5">
+      {/* 팀 정보 카드 */}
+      <div className="rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm">
         <div className="mb-3 flex items-center gap-2">
           <span
-            className="h-3 w-3 shrink-0 rounded-full"
+            className="h-4 w-4 shrink-0 rounded-full shadow-sm ring-2 ring-white"
             style={{ backgroundColor: team.color }}
           />
-          <span className="font-semibold">🎵 {team.name}</span>
+          <span className="font-bold text-[var(--foreground)]">🎵 {team.name}</span>
           <span
             className={
               status === "recruiting"
-                ? "rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
-                : "rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500"
+                ? "rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700"
+                : "rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-500"
             }
           >
             {TEAM_STATUS_LABEL[status]}
@@ -85,19 +86,17 @@ export default async function TeamDetailPage({
         )}
         {members.length > 0 && (
           <div className="mb-3">
-            <h3 className="mb-1 text-xs font-semibold text-zinc-400">
+            <h3 className="mb-1.5 text-xs font-bold uppercase tracking-wide text-zinc-400">
               팀원
             </h3>
             <ul className="flex flex-col gap-1 text-sm">
               {members.map((m, i) => (
                 <li key={i} className="flex items-center gap-2">
-                  <span className="w-16 shrink-0 text-zinc-500">
-                    {m.session}
-                  </span>
+                  <span className="w-16 shrink-0 text-zinc-500">{m.session}</span>
                   {m.name ? (
                     <span className="text-zinc-700">{m.name}</span>
                   ) : (
-                    <span className="font-medium text-amber-600">
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
                       모집중
                     </span>
                   )}
@@ -111,15 +110,16 @@ export default async function TeamDetailPage({
         </p>
       </div>
 
-      <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-5">
-        <h2 className="mb-2 text-sm font-semibold">다가오는 예약</h2>
+      {/* 다가오는 예약 */}
+      <div className="mt-4 rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm">
+        <h2 className="mb-2 text-sm font-bold text-[var(--foreground)]">다가오는 예약</h2>
         {upcoming && upcoming.length > 0 ? (
-          <ul className="flex flex-col gap-1 text-sm text-zinc-600">
+          <ul className="flex flex-col gap-1.5 text-sm text-zinc-600">
             {upcoming.map((r) => (
               <li key={r.id}>
                 <Link
                   href={`/reservations/${r.id}`}
-                  className="hover:underline"
+                  className="hover:text-[var(--brand-text)] hover:underline"
                 >
                   {fmt(r.starts_at)} ~ {fmt(r.ends_at)}
                   {r.note ? ` — ${r.note}` : ""}
@@ -132,15 +132,15 @@ export default async function TeamDetailPage({
         )}
         <Link
           href="/reserve"
-          className="mt-3 inline-block text-sm font-medium text-zinc-900 underline hover:text-zinc-600"
+          className="mt-3 inline-block text-sm font-semibold text-[var(--brand-text)] hover:underline"
         >
           이 팀으로 예약하러 가기 →
         </Link>
       </div>
 
       {/* 댓글 */}
-      <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-5">
-        <h2 className="mb-3 text-sm font-semibold">
+      <div className="mt-4 rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-sm font-bold text-[var(--foreground)]">
           댓글 {comments?.length ?? 0}
         </h2>
         {comments && comments.length > 0 ? (
@@ -148,10 +148,10 @@ export default async function TeamDetailPage({
             {(comments as TeamComment[]).map((c) => (
               <li
                 key={c.id}
-                className="border-b border-zinc-100 pb-3 last:border-b-0 last:pb-0"
+                className="border-b border-[var(--border)] pb-3 last:border-b-0 last:pb-0"
               >
                 <div className="flex items-center gap-2 text-xs text-zinc-400">
-                  <span className="font-medium text-zinc-600">
+                  <span className="font-semibold text-zinc-600">
                     {c.created_by_name}
                   </span>
                   <span>{fmt(c.created_at)}</span>
@@ -180,11 +180,13 @@ export default async function TeamDetailPage({
         )}
       </div>
 
+      {/* 수정/삭제 */}
       {session?.user ? (
         <>
           <Link
             href={`/teams/${team.id}/edit`}
-            className="mt-6 block rounded-lg bg-zinc-900 p-3 text-center font-medium text-white hover:bg-zinc-700"
+            className="mt-6 block rounded-xl p-3 text-center font-semibold text-white shadow-md transition-all hover:opacity-90 hover:shadow-lg active:scale-[0.99]"
+            style={{ background: "var(--brand-gradient)" }}
           >
             수정하기
           </Link>
