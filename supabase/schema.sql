@@ -20,6 +20,13 @@ create table teams (
   created_at      timestamptz not null default now()
 );
 
+-- 사용자 프로필 (닉네임) — 없으면 네이버 이름을 그대로 표시
+create table profiles (
+  id         text primary key,     -- 네이버 사용자 고유 ID
+  nickname   text not null,
+  updated_at timestamptz not null default now()
+);
+
 -- 모집글 댓글
 create table comments (
   id              uuid primary key default gen_random_uuid(),
@@ -95,3 +102,10 @@ create index reservations_starts_at_idx on reservations (starts_at);
 -- (기존 텍스트 팀원 정보는 사라짐)
 -- alter table teams drop column members;
 -- alter table teams add column members jsonb not null default '[]';
+
+-- [마이그레이션] 닉네임 기능 — 위까지 실행했다면 아래만 실행:
+-- create table profiles (
+--   id         text primary key,
+--   nickname   text not null,
+--   updated_at timestamptz not null default now()
+-- );

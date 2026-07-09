@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { validateRange } from "@/lib/validate";
 import { RULES } from "@/lib/constants";
 import { dayStartEpoch, kstDateString } from "@/lib/dates";
+import { displayName } from "@/lib/profile";
 
 const RESERVATION_SELECT =
   "id, team_id, starts_at, ends_at, note, created_by, created_by_name, created_at, team:teams(id, name, color)";
@@ -85,7 +86,10 @@ export async function POST(req: NextRequest) {
       ends_at: endsAt,
       note: note?.trim() || null,
       created_by: session.user.id,
-      created_by_name: session.user.name ?? "이름 없음",
+      created_by_name: await displayName(
+        session.user.id,
+        session.user.name ?? "이름 없음"
+      ),
     })
     .select(RESERVATION_SELECT)
     .single();

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { TEAM_COLORS } from "@/lib/constants";
 import { parseMemberEntries } from "@/lib/validate";
+import { displayName } from "@/lib/profile";
 
 const TEAM_SELECT =
   "id, name, color, status, members, content, created_by, created_by_name, created_at";
@@ -98,7 +99,10 @@ export async function POST(req: NextRequest) {
       members: parsed.entries,
       content: body.content?.trim() || null,
       created_by: session.user.id,
-      created_by_name: session.user.name ?? "이름 없음",
+      created_by_name: await displayName(
+        session.user.id,
+        session.user.name ?? "이름 없음"
+      ),
     })
     .select("id")
     .single();

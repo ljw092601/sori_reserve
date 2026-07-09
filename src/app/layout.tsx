@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { auth, signIn, signOut } from "@/auth";
+import { displayName } from "@/lib/profile";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,6 +15,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth();
+  const name = session?.user
+    ? await displayName(session.user.id, session.user.name ?? "이름 없음")
+    : null;
 
   return (
     <html lang="ko" className="h-full antialiased">
@@ -44,9 +48,13 @@ export default async function RootLayout({
                   }}
                   className="flex items-center gap-2"
                 >
-                  <span className="text-sm text-zinc-600">
-                    {session.user.name}
-                  </span>
+                  <Link
+                    href="/account"
+                    className="text-sm text-zinc-600 hover:underline"
+                    title="계정 설정"
+                  >
+                    {name}
+                  </Link>
                   <button className="text-sm text-zinc-400 underline hover:text-zinc-600">
                     로그아웃
                   </button>

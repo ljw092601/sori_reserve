@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { displayName } from "@/lib/profile";
 
 /**
  * POST /api/teams/[id]/comments — 모집글에 댓글 쓰기 (네이버 로그인 필요)
@@ -48,7 +49,10 @@ export async function POST(
       team_id: id,
       content,
       created_by: session.user.id,
-      created_by_name: session.user.name ?? "이름 없음",
+      created_by_name: await displayName(
+        session.user.id,
+        session.user.name ?? "이름 없음"
+      ),
     })
     .select("id")
     .single();
