@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { auth, signIn, signOut } from "@/auth";
 import { displayName } from "@/lib/profile";
@@ -24,8 +25,15 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900">
         <header className="border-b border-zinc-200 bg-white">
           <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between px-4">
-            <Link href="/" className="text-lg font-bold">
-              🎸 소리 동아리방 예약
+            <Link href="/" className="flex items-center gap-2 text-lg font-bold">
+              <Image
+                src="/logo.png"
+                alt="소리 로고"
+                width={28}
+                height={28}
+                priority
+              />
+              소리 동아리방 예약
             </Link>
             <div className="flex items-center gap-3">
               <Link
