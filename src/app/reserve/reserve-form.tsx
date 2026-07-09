@@ -23,6 +23,7 @@ export default function ReserveForm() {
   const [date, setDate] = useState(searchParams.get("date") ?? "");
   const [start, setStart] = useState(searchParams.get("start") ?? "");
   const [end, setEnd] = useState(searchParams.get("end") ?? "");
+  const [repeatWeeks, setRepeatWeeks] = useState(1);
 
   useEffect(() => {
     // 모집이 끝난 팀만 예약할 수 있다
@@ -57,6 +58,7 @@ export default function ReserveForm() {
         startsAt: kstToIso(date, start),
         endsAt: kstToIso(date, end),
         note: form.get("note"),
+        repeatWeeks,
       }),
     });
 
@@ -143,6 +145,31 @@ export default function ReserveForm() {
             </button>
           ))}
         </div>
+
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          매주 반복
+          <select
+            value={repeatWeeks}
+            onChange={(e) => setRepeatWeeks(Number(e.target.value))}
+            className="rounded-lg border border-zinc-300 bg-white p-2.5"
+          >
+            <option value={1}>반복 안 함</option>
+            {Array.from(
+              { length: RULES.MAX_REPEAT_WEEKS - 1 },
+              (_, i) => i + 2
+            ).map((n) => (
+              <option key={n} value={n}>
+                {n}주 동안 (총 {n}회)
+              </option>
+            ))}
+          </select>
+          {repeatWeeks > 1 && (
+            <span className="text-xs font-normal text-zinc-500">
+              같은 요일·시간으로 {repeatWeeks}주간 예약돼요. 한 주라도 겹치면
+              전체가 등록되지 않아요.
+            </span>
+          )}
+        </label>
 
         <label className="flex flex-col gap-1 text-sm font-medium">
           메모 (선택)

@@ -20,7 +20,7 @@ export default async function ReservationDetailPage({
   const { data: r } = await supabase
     .from("reservations")
     .select(
-      "id, team_id, starts_at, ends_at, note, created_by, created_by_name, team:teams(id, name, color)"
+      "id, team_id, starts_at, ends_at, note, series_id, created_by, created_by_name, team:teams(id, name, color)"
     )
     .eq("id", id)
     .single();
@@ -56,6 +56,11 @@ export default async function ReservationDetailPage({
           <div>종료: {fmt(r.ends_at)}</div>
           <div>예약자: {r.created_by_name}</div>
           {r.note && <div>메모: {r.note}</div>}
+          {r.series_id && (
+            <div className="mt-1 w-fit rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">
+              🔁 매주 반복 예약
+            </div>
+          )}
         </dl>
       </div>
 
@@ -67,7 +72,7 @@ export default async function ReservationDetailPage({
           >
             수정하기
           </Link>
-          <CancelForm reservationId={r.id} />
+          <CancelForm reservationId={r.id} isSeries={!!r.series_id} />
         </>
       ) : (
         <p className="mt-6 text-center text-sm text-zinc-400">

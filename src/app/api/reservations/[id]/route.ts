@@ -111,9 +111,10 @@ export async function PATCH(
 /**
  * DELETE /api/reservations/[id] — 예약 취소
  * 로그인한 사용자가 본인이 만든 예약만 취소할 수 있다.
+ * ?series=true 를 주면 같은 반복 묶음(series_id)의 예약을 전부 취소한다.
  */
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
@@ -129,7 +130,7 @@ export async function DELETE(
 
   const { data: reservation, error: findError } = await supabase
     .from("reservations")
-    .select("id, created_by")
+    .select("id, created_by, series_id")
     .eq("id", id)
     .single();
   // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 예약", 그 외는 DB 장애
@@ -156,7 +157,19 @@ export async function DELETE(
     );
   }
 
-  const { error } = await supabase.from("reservations").delete().eq("id", id);
+  const deleteSeries =
+    req.nextUrl.searchParams.get("series") === "true" &&
+    !!reservation.series_id;
+
+  const query = deleteSeries
+    ? supabase
+        .from("reservations")
+        .delete()
+        .eq("series_id", reservation.series_id)
+        .eq("created_by", session.user.id) // 본인 예약만 (안전장치)
+    : supabase.from("reservations").delete().eq("id", id);
+
+  const { error } = await query;
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

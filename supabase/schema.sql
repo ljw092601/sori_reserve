@@ -45,6 +45,7 @@ create table reservations (
   starts_at       timestamptz not null,
   ends_at         timestamptz not null,
   note            text,
+  series_id       uuid,          -- 매주 반복 예약 묶음 ID (단건 예약은 null)
   created_by      text not null, -- 네이버 사용자 고유 ID (예약자 본인만 취소 가능)
   created_by_name text not null, -- 표시용 예약자 이름
   created_at      timestamptz not null default now(),
@@ -109,3 +110,6 @@ create index reservations_starts_at_idx on reservations (starts_at);
 --   nickname   text not null,
 --   updated_at timestamptz not null default now()
 -- );
+
+-- [마이그레이션] 매주 반복 예약 — 위까지 실행했다면 아래만 실행:
+-- alter table reservations add column series_id uuid;

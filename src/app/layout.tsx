@@ -6,7 +6,7 @@ import { displayName } from "@/lib/profile";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "소리 동아리방 예약",
+  title: "소리터 동아리방 예약",
   description: "밴드 동아리방 사용 시간 예약 시스템",
 };
 
@@ -33,7 +33,7 @@ export default async function RootLayout({
                 height={28}
                 priority
               />
-              소리 동아리방 예약
+              소리터 동아리방 예약
             </Link>
             <div className="flex items-center gap-3">
               <Link

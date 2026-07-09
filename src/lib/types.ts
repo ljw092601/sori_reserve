@@ -42,6 +42,8 @@ export type Reservation = {
   starts_at: string; // ISO 8601
   ends_at: string; // ISO 8601
   note: string | null;
+  /** 매주 반복 예약 묶음 ID — 단건 예약은 null */
+  series_id?: string | null;
   /** 네이버 사용자 고유 ID — 예약자 본인만 취소 가능 */
   created_by: string;
   /** 표시용 예약자 이름 */

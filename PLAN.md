@@ -98,8 +98,8 @@
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
 | GET | `/api/reservations?from=&to=` | 기간 내 예약 목록 (로그인 불필요) |
-| POST | `/api/reservations` | 예약 생성 (로그인 필요 / teamId, startsAt, endsAt, note) |
-| PATCH/DELETE | `/api/reservations/[id]` | 예약 수정/취소 (예약자 본인만) |
+| POST | `/api/reservations` | 예약 생성 (로그인 필요 / teamId, startsAt, endsAt, note?, repeatWeeks?) — repeatWeeks(2~15)로 매주 반복 생성 |
+| PATCH/DELETE | `/api/reservations/[id]` | 예약 수정/취소 (예약자 본인만), DELETE ?series=true로 반복 전체 취소 |
 | GET | `/api/teams` | 모집글(팀) 목록 |
 | POST | `/api/teams` | 모집글 쓰기 (로그인 필요 / name=곡 제목, status?, members?: {session,name}[], content?) |
 | PATCH | `/api/teams/[id]` | 모집글 수정 (로그인한 누구나 / name, status, members?, content?) |
@@ -140,7 +140,7 @@
   - 카페가 회원 전용인 경우: 크롤링 대신 사이트 자체 공지 게시판으로 대체 검토
 
 ### Phase 3 — 나중에 고려
-- 정기 예약 (매주 반복)
+- ~~정기 예약 (매주 반복)~~ ✅ Phase 2에서 구현 — 예약 시 반복 주 수(2~15) 선택, series_id로 묶어 전체 취소 지원. 사용 금지 시간은 전용 팀을 만들어 반복 예약으로 처리
 - 카카오톡/디스코드 알림
 - 여러 방(부스) 지원
 

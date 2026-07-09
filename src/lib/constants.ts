@@ -6,6 +6,8 @@ export const RULES = {
   MAX_MINUTES: 240,
   /** 오늘부터 며칠 뒤까지 예약 가능한지 */
   MAX_DAYS_AHEAD: 14,
+  /** 매주 반복 예약 최대 주 수 (반복은 14일 제한과 무관하게 이 범위까지 허용) */
+  MAX_REPEAT_WEEKS: 15,
 } as const;
 
 /** 예약 폼의 빠른 시간 선택 버튼 — RULES 범위를 벗어나는 항목은 자동 제외 */
