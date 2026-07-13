@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { validateRange } from "@/lib/validate";
-import { isReservationCategory } from "@/lib/constants";
+import { validateBlockRange, validateRange } from "@/lib/validate";
+import { isAdminBlockTeam, isReservationCategory } from "@/lib/constants";
+import { isExecutive } from "@/lib/roles";
+
+/** 조인된 팀 이름 꺼내기 — supabase 조인 결과는 배열일 수 있다 */
+const joinedTeamName = (team: unknown): string =>
+  (Array.isArray(team) ? team[0]?.name : (team as { name?: string })?.name) ??
+  "";
 
 /**
- * PATCH /api/reservations/[id] — 예약 수정 (예약자 본인만)
+ * PATCH /api/reservations/[id] — 예약 수정
+ * 예약자 본인, 또는 사용 금지 예약이면 임원 누구나.
  * body: { category, teamId?, startsAt, endsAt, note? }
  * 팀(teamId)은 합주(ensemble)일 때만 필수.
  */
@@ -59,16 +66,11 @@ export async function PATCH(
     );
   }
 
-  const rangeError = validateRange(new Date(startsAt), new Date(endsAt));
-  if (rangeError) {
-    return NextResponse.json({ error: rangeError }, { status: 400 });
-  }
-
   const supabase = supabaseAdmin();
 
   const { data: reservation, error: findError } = await supabase
     .from("reservations")
-    .select("id, created_by")
+    .select("id, created_by, team_id, team:teams(name)")
     .eq("id", id)
     .single();
   // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 예약", 그 외는 DB 장애
@@ -88,11 +90,69 @@ export async function PATCH(
       { status: 404 }
     );
   }
-  if (reservation.created_by !== session.user.id) {
+
+  // 사용 금지 예약은 임원이 다같이 관리한다 — 만든 사람이라도 임원에서
+  // 물러났으면 더는 관리할 수 없다 (일반 예약은 기존대로 본인만)
+  const isOwner = reservation.created_by === session.user.id;
+  const isBlock = isAdminBlockTeam(joinedTeamName(reservation.team));
+  const exec = await isExecutive(session.user.id);
+  if (isBlock ? !exec : !isOwner) {
     return NextResponse.json(
-      { error: "본인이 만든 예약만 수정할 수 있습니다." },
+      {
+        error: isBlock
+          ? "사용 금지 예약은 임원만 수정할 수 있습니다."
+          : "본인이 만든 예약만 수정할 수 있습니다.",
+      },
       { status: 403 }
     );
+  }
+
+  // 일반 예약을 사용 금지 팀으로 바꿔치기하는 것도 막는다 (POST와 같은 규칙)
+  // 합주가 아니면 팀 없이 저장되므로 사용 금지일 수 없다
+  let newIsBlock = false;
+  if (category === "ensemble") {
+    newIsBlock = isBlock;
+    if (teamId !== reservation.team_id) {
+      const { data: newTeam, error: newTeamError } = await supabase
+        .from("teams")
+        .select("name")
+        .eq("id", teamId)
+        .single();
+      // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 팀", 그 외는 DB 장애
+      if (
+        newTeamError &&
+        newTeamError.code !== "PGRST116" &&
+        newTeamError.code !== "22P02"
+      ) {
+        return NextResponse.json(
+          { error: "팀 조회에 실패했습니다. 잠시 후 다시 시도해주세요." },
+          { status: 500 }
+        );
+      }
+      if (!newTeam) {
+        return NextResponse.json(
+          { error: "팀을 찾을 수 없습니다." },
+          { status: 404 }
+        );
+      }
+      newIsBlock = isAdminBlockTeam(newTeam.name);
+      if (newIsBlock && !exec) {
+        return NextResponse.json(
+          { error: "사용 금지 시간 등록은 임원만 할 수 있습니다." },
+          { status: 403 }
+        );
+      }
+    }
+  }
+
+  // 사용 금지 예약은 일반 규칙(시간 제한·14일·과거 금지)을 적용하지 않는다
+  // — 몇 주 뒤 회차 수정, 이미 시작된 금지의 종료 단축 같은 관리 작업 때문
+  const rangeError = (newIsBlock ? validateBlockRange : validateRange)(
+    new Date(startsAt),
+    new Date(endsAt)
+  );
+  if (rangeError) {
+    return NextResponse.json({ error: rangeError }, { status: 400 });
   }
 
   const { data, error } = await supabase
@@ -130,7 +190,7 @@ export async function PATCH(
 
 /**
  * DELETE /api/reservations/[id] — 예약 취소
- * 로그인한 사용자가 본인이 만든 예약만 취소할 수 있다.
+ * 예약자 본인, 또는 사용 금지 예약이면 임원 누구나.
  * ?series=true 를 주면 같은 반복 묶음(series_id)의 예약을 전부 취소한다.
  */
 export async function DELETE(
@@ -150,7 +210,7 @@ export async function DELETE(
 
   const { data: reservation, error: findError } = await supabase
     .from("reservations")
-    .select("id, created_by, series_id")
+    .select("id, created_by, series_id, team:teams(name)")
     .eq("id", id)
     .single();
   // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 예약", 그 외는 DB 장애
@@ -170,9 +230,17 @@ export async function DELETE(
       { status: 404 }
     );
   }
-  if (reservation.created_by !== session.user.id) {
+  // 사용 금지 예약은 임원이 다같이 관리한다 — 만든 사람이라도 임원에서
+  // 물러났으면 더는 관리할 수 없다 (일반 예약은 기존대로 본인만)
+  const isOwner = reservation.created_by === session.user.id;
+  const isBlock = isAdminBlockTeam(joinedTeamName(reservation.team));
+  if (isBlock ? !(await isExecutive(session.user.id)) : !isOwner) {
     return NextResponse.json(
-      { error: "본인이 만든 예약만 취소할 수 있습니다." },
+      {
+        error: isBlock
+          ? "사용 금지 예약은 임원만 취소할 수 있습니다."
+          : "본인이 만든 예약만 취소할 수 있습니다.",
+      },
       { status: 403 }
     );
   }
@@ -186,7 +254,8 @@ export async function DELETE(
         .from("reservations")
         .delete()
         .eq("series_id", reservation.series_id)
-        .eq("created_by", session.user.id) // 본인 예약만 (안전장치)
+        // 만든 사람의 반복 묶음만 (안전장치) — 임원이 취소해도 원래 만든 사람 기준
+        .eq("created_by", reservation.created_by)
     : supabase.from("reservations").delete().eq("id", id);
 
   const { error } = await query;
