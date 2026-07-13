@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { validateBlockRange, validateRange } from "@/lib/validate";
-import { isAdminBlockTeam, RULES } from "@/lib/constants";
+import {
+  isAdminBlockTeam,
+  isReservationCategory,
+  RULES,
+} from "@/lib/constants";
 import { dayStartEpoch, kstDateString } from "@/lib/dates";
 import { displayName } from "@/lib/profile";
 import { isExecutive } from "@/lib/roles";
 
 const RESERVATION_SELECT =
-  "id, team_id, starts_at, ends_at, note, created_by, created_by_name, created_at, team:teams(id, name, color)";
+  "id, team_id, category, starts_at, ends_at, note, created_by, created_by_name, created_at, team:teams(id, name, color)";
 
 /**
  * GET /api/reservations?from=ISO&to=ISO — 기간과 겹치는 예약 목록 (로그인 불필요)
@@ -42,7 +46,8 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/reservations — 예약 생성 (네이버 로그인 필요)
- * body: { teamId, startsAt, endsAt, note?, repeatWeeks? }
+ * body: { category, teamId?, startsAt, endsAt, note?, repeatWeeks? }
+ * 팀(teamId)은 합주(ensemble)일 때만 필수 — 개인연습/기타는 팀 없이 저장한다.
  * repeatWeeks(2~15)를 주면 매주 같은 요일/시간으로 N건을 한 번에 생성한다.
  * 한 건이라도 겹치면 전체 실패 (단일 INSERT라 원자적).
  */
@@ -56,6 +61,7 @@ export async function POST(req: NextRequest) {
   }
 
   let body: {
+    category?: string;
     teamId?: string;
     startsAt?: string;
     endsAt?: string;
@@ -68,10 +74,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { teamId, startsAt, endsAt, note } = body;
-  if (!teamId || !startsAt || !endsAt) {
+  // 카테고리 도입 전 클라이언트(팀만 보내던 버전)와의 호환을 위해 기본값은 합주
+  const category = body.category ?? "ensemble";
+  if (!isReservationCategory(category)) {
     return NextResponse.json(
-      { error: "팀, 시작/종료 시간은 필수입니다." },
+      { error: "올바른 예약 목적이 아닙니다." },
+      { status: 400 }
+    );
+  }
+
+  const { teamId, startsAt, endsAt, note } = body;
+  if (!startsAt || !endsAt) {
+    return NextResponse.json(
+      { error: "시작/종료 시간은 필수입니다." },
+      { status: 400 }
+    );
+  }
+  if (category === "ensemble" && !teamId) {
+    return NextResponse.json(
+      { error: "합주 예약은 팀 선택이 필수입니다." },
       { status: 400 }
     );
   }
@@ -91,31 +112,40 @@ export async function POST(req: NextRequest) {
   const supabase = supabaseAdmin();
 
   // 사용 금지 팀 예약은 임원 전용 — UI에서 숨기는 것과 별개로 여기서 강제한다
-  const { data: team, error: teamError } = await supabase
-    .from("teams")
-    .select("name")
-    .eq("id", teamId)
-    .single();
-  // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 팀", 그 외는 DB 장애
-  if (teamError && teamError.code !== "PGRST116" && teamError.code !== "22P02") {
-    return NextResponse.json(
-      { error: "팀 조회에 실패했습니다. 잠시 후 다시 시도해주세요." },
-      { status: 500 }
-    );
+  // 합주가 아니면 팀 없이 저장되므로 사용 금지일 수 없다
+  let isBlock = false;
+  if (category === "ensemble") {
+    const { data: team, error: teamError } = await supabase
+      .from("teams")
+      .select("name")
+      .eq("id", teamId)
+      .single();
+    // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 팀", 그 외는 DB 장애
+    if (
+      teamError &&
+      teamError.code !== "PGRST116" &&
+      teamError.code !== "22P02"
+    ) {
+      return NextResponse.json(
+        { error: "팀 조회에 실패했습니다. 잠시 후 다시 시도해주세요." },
+        { status: 500 }
+      );
+    }
+    if (!team) {
+      return NextResponse.json(
+        { error: "팀을 찾을 수 없습니다." },
+        { status: 404 }
+      );
+    }
+    isBlock = isAdminBlockTeam(team.name);
+    if (isBlock && !(await isExecutive(session.user.id))) {
+      return NextResponse.json(
+        { error: "사용 금지 시간 등록은 임원만 할 수 있습니다." },
+        { status: 403 }
+      );
+    }
   }
-  if (!team) {
-    return NextResponse.json(
-      { error: "팀을 찾을 수 없습니다." },
-      { status: 404 }
-    );
-  }
-  const isBlock = isAdminBlockTeam(team.name);
-  if (isBlock && !(await isExecutive(session.user.id))) {
-    return NextResponse.json(
-      { error: "사용 금지 시간 등록은 임원만 할 수 있습니다." },
-      { status: 403 }
-    );
-  }
+  // 반복은 14일 제한을 넘을 수 있어, 일반 예약이 이 경로로 우회하면 안 된다
   if (repeatWeeks > 1 && !isBlock) {
     return NextResponse.json(
       { error: "매주 반복은 사용 금지 등록에서만 가능합니다." },
@@ -144,7 +174,9 @@ export async function POST(req: NextRequest) {
   const seriesId = repeatWeeks > 1 ? crypto.randomUUID() : null;
 
   const rows = Array.from({ length: repeatWeeks }, (_, i) => ({
-    team_id: teamId,
+    // 합주가 아니면 클라이언트가 teamId를 보냈어도 무시한다 (팀 없는 예약)
+    team_id: category === "ensemble" ? teamId : null,
+    category,
     starts_at: new Date(startMs + i * WEEK_MS).toISOString(),
     ends_at: new Date(endMs + i * WEEK_MS).toISOString(),
     note: note?.trim() || null,

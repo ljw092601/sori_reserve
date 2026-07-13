@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { validateBlockRange, validateRange } from "@/lib/validate";
-import { isAdminBlockTeam } from "@/lib/constants";
+import { isAdminBlockTeam, isReservationCategory } from "@/lib/constants";
 import { isExecutive } from "@/lib/roles";
 
 /** 조인된 팀 이름 꺼내기 — supabase 조인 결과는 배열일 수 있다 */
@@ -13,7 +13,8 @@ const joinedTeamName = (team: unknown): string =>
 /**
  * PATCH /api/reservations/[id] — 예약 수정
  * 예약자 본인, 또는 사용 금지 예약이면 임원 누구나.
- * body: { teamId, startsAt, endsAt, note? }
+ * body: { category, teamId?, startsAt, endsAt, note? }
+ * 팀(teamId)은 합주(ensemble)일 때만 필수.
  */
 export async function PATCH(
   req: NextRequest,
@@ -30,6 +31,7 @@ export async function PATCH(
   const { id } = await params;
 
   let body: {
+    category?: string;
     teamId?: string;
     startsAt?: string;
     endsAt?: string;
@@ -41,10 +43,25 @@ export async function PATCH(
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { teamId, startsAt, endsAt, note } = body;
-  if (!teamId || !startsAt || !endsAt) {
+  // 카테고리 도입 전 클라이언트와의 호환을 위해 기본값은 합주
+  const category = body.category ?? "ensemble";
+  if (!isReservationCategory(category)) {
     return NextResponse.json(
-      { error: "팀, 시작/종료 시간은 필수입니다." },
+      { error: "올바른 예약 목적이 아닙니다." },
+      { status: 400 }
+    );
+  }
+
+  const { teamId, startsAt, endsAt, note } = body;
+  if (!startsAt || !endsAt) {
+    return NextResponse.json(
+      { error: "시작/종료 시간은 필수입니다." },
+      { status: 400 }
+    );
+  }
+  if (category === "ensemble" && !teamId) {
+    return NextResponse.json(
+      { error: "합주 예약은 팀 선택이 필수입니다." },
       { status: 400 }
     );
   }
@@ -91,36 +108,40 @@ export async function PATCH(
   }
 
   // 일반 예약을 사용 금지 팀으로 바꿔치기하는 것도 막는다 (POST와 같은 규칙)
-  let newIsBlock = isBlock;
-  if (teamId !== reservation.team_id) {
-    const { data: newTeam, error: newTeamError } = await supabase
-      .from("teams")
-      .select("name")
-      .eq("id", teamId)
-      .single();
-    // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 팀", 그 외는 DB 장애
-    if (
-      newTeamError &&
-      newTeamError.code !== "PGRST116" &&
-      newTeamError.code !== "22P02"
-    ) {
-      return NextResponse.json(
-        { error: "팀 조회에 실패했습니다. 잠시 후 다시 시도해주세요." },
-        { status: 500 }
-      );
-    }
-    if (!newTeam) {
-      return NextResponse.json(
-        { error: "팀을 찾을 수 없습니다." },
-        { status: 404 }
-      );
-    }
-    newIsBlock = isAdminBlockTeam(newTeam.name);
-    if (newIsBlock && !exec) {
-      return NextResponse.json(
-        { error: "사용 금지 시간 등록은 임원만 할 수 있습니다." },
-        { status: 403 }
-      );
+  // 합주가 아니면 팀 없이 저장되므로 사용 금지일 수 없다
+  let newIsBlock = false;
+  if (category === "ensemble") {
+    newIsBlock = isBlock;
+    if (teamId !== reservation.team_id) {
+      const { data: newTeam, error: newTeamError } = await supabase
+        .from("teams")
+        .select("name")
+        .eq("id", teamId)
+        .single();
+      // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 팀", 그 외는 DB 장애
+      if (
+        newTeamError &&
+        newTeamError.code !== "PGRST116" &&
+        newTeamError.code !== "22P02"
+      ) {
+        return NextResponse.json(
+          { error: "팀 조회에 실패했습니다. 잠시 후 다시 시도해주세요." },
+          { status: 500 }
+        );
+      }
+      if (!newTeam) {
+        return NextResponse.json(
+          { error: "팀을 찾을 수 없습니다." },
+          { status: 404 }
+        );
+      }
+      newIsBlock = isAdminBlockTeam(newTeam.name);
+      if (newIsBlock && !exec) {
+        return NextResponse.json(
+          { error: "사용 금지 시간 등록은 임원만 할 수 있습니다." },
+          { status: 403 }
+        );
+      }
     }
   }
 
@@ -137,7 +158,9 @@ export async function PATCH(
   const { data, error } = await supabase
     .from("reservations")
     .update({
-      team_id: teamId,
+      // 합주가 아니면 teamId가 와도 무시한다 (팀 없는 예약)
+      team_id: category === "ensemble" ? teamId : null,
+      category,
       starts_at: startsAt,
       ends_at: endsAt,
       note: note?.trim() || null,

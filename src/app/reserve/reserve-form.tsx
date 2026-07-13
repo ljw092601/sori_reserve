@@ -3,7 +3,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { DURATION_OPTIONS, isAdminBlockTeam, RULES } from "@/lib/constants";
+import {
+  DURATION_OPTIONS,
+  isAdminBlockTeam,
+  RESERVATION_CATEGORIES,
+  RULES,
+  type ReservationCategory,
+} from "@/lib/constants";
 import { kstDateString, kstToIso } from "@/lib/dates";
 import type { Team } from "@/lib/types";
 import TeamPicker from "@/components/team-picker";
@@ -15,6 +21,7 @@ export default function ReserveForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [teams, setTeams] = useState<Team[]>([]);
+  const [category, setCategory] = useState<ReservationCategory>("ensemble");
   const [teamId, setTeamId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +54,7 @@ export default function ReserveForm() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    if (!teamId) {
+    if (category === "ensemble" && !teamId) {
       setError("팀을 선택해주세요.");
       return;
     }
@@ -58,7 +65,9 @@ export default function ReserveForm() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        teamId,
+        category,
+        // 합주가 아니면 이전에 골랐던 팀이 남아 있어도 보내지 않는다
+        teamId: category === "ensemble" ? teamId : undefined,
         startsAt: kstToIso(date, start),
         endsAt: kstToIso(date, end),
         note: form.get("note"),
@@ -82,20 +91,43 @@ export default function ReserveForm() {
       <h1 className="mb-6 text-xl font-bold text-[var(--foreground)]">동아리방 예약</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* 팀 선택 */}
+        {/* 목적 카테고리 */}
         <div className="flex flex-col gap-1 text-sm font-semibold">
-          팀 (모집완료된 팀만)
-          <TeamPicker teams={teams} value={teamId} onChange={setTeamId} />
-          {teams.length === 0 && (
-            <p className="text-xs font-normal text-zinc-500">
-              모집완료된 팀이 아직 없어요.{" "}
-              <Link href="/teams" className="text-[var(--brand-text)] underline">
-                팀 모집 게시판
-              </Link>
-              에서 팀을 완성해주세요.
-            </p>
-          )}
+          목적
+          <div className="grid grid-cols-3 gap-1 rounded-xl border border-[var(--border)] bg-white p-1">
+            {RESERVATION_CATEGORIES.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setCategory(value)}
+                className={`rounded-lg py-2 text-sm font-semibold transition-colors ${
+                  category === value
+                    ? "bg-[var(--brand-mid)] text-white shadow-sm"
+                    : "text-zinc-500 hover:bg-[var(--brand-soft)]"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* 팀 선택 — 합주일 때만 */}
+        {category === "ensemble" && (
+          <div className="flex flex-col gap-1 text-sm font-semibold">
+            팀 (모집완료된 팀만)
+            <TeamPicker teams={teams} value={teamId} onChange={setTeamId} />
+            {teams.length === 0 && (
+              <p className="text-xs font-normal text-zinc-500">
+                모집완료된 팀이 아직 없어요.{" "}
+                <Link href="/teams" className="text-[var(--brand-text)] underline">
+                  팀 모집 게시판
+                </Link>
+                에서 팀을 완성해주세요.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* 날짜 */}
         <label className="flex flex-col gap-1 text-sm font-semibold">

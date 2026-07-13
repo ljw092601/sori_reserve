@@ -2,7 +2,12 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { DURATION_OPTIONS, isAdminBlockTeam } from "@/lib/constants";
+import {
+  DURATION_OPTIONS,
+  isAdminBlockTeam,
+  RESERVATION_CATEGORIES,
+  type ReservationCategory,
+} from "@/lib/constants";
 import { kstToIso } from "@/lib/dates";
 import type { Team } from "@/lib/types";
 import TeamPicker from "@/components/team-picker";
@@ -16,6 +21,7 @@ export default function EditForm({
 }: {
   reservationId: string;
   initial: {
+    category: ReservationCategory;
     teamId: string;
     date: string;
     start: string;
@@ -28,6 +34,7 @@ export default function EditForm({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [category, setCategory] = useState(initial.category);
   const [teamId, setTeamId] = useState(initial.teamId);
   const [date, setDate] = useState(initial.date);
   const [start, setStart] = useState(initial.start);
@@ -61,7 +68,7 @@ export default function EditForm({
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    if (!teamId) {
+    if (category === "ensemble" && !teamId) {
       setError("팀을 선택해주세요.");
       return;
     }
@@ -71,7 +78,9 @@ export default function EditForm({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        teamId,
+        category,
+        // 합주가 아니면 이전에 골랐던 팀이 남아 있어도 보내지 않는다
+        teamId: category === "ensemble" ? teamId : undefined,
         startsAt: kstToIso(date, start),
         endsAt: kstToIso(date, end),
         note,
@@ -96,9 +105,31 @@ export default function EditForm({
       <h2 className="font-bold text-[var(--foreground)]">예약 수정</h2>
 
       <div className="flex flex-col gap-1 text-sm font-semibold">
-        팀 (모집완료된 팀만)
-        <TeamPicker teams={teams} value={teamId} onChange={setTeamId} />
+        목적
+        <div className="grid grid-cols-3 gap-1 rounded-xl border border-[var(--border)] bg-white p-1">
+          {RESERVATION_CATEGORIES.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setCategory(value)}
+              className={`rounded-lg py-2 text-sm font-semibold transition-colors ${
+                category === value
+                  ? "bg-[var(--brand-mid)] text-white shadow-sm"
+                  : "text-zinc-500 hover:bg-[var(--brand-soft)]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {category === "ensemble" && (
+        <div className="flex flex-col gap-1 text-sm font-semibold">
+          팀 (모집완료된 팀만)
+          <TeamPicker teams={teams} value={teamId} onChange={setTeamId} />
+        </div>
+      )}
 
       <label className="flex flex-col gap-1 text-sm font-semibold">
         날짜

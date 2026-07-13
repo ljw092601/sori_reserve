@@ -18,6 +18,32 @@ export const DURATION_OPTIONS = [30, 60, 120, 180, 240]
     min,
   }));
 
+/** 예약 목적 카테고리 — DB에는 키(value)를 저장하고 화면에는 라벨을 표시한다 */
+export const RESERVATION_CATEGORIES = [
+  { value: "ensemble", label: "합주" },
+  { value: "personal", label: "개인연습" },
+  { value: "etc", label: "기타" },
+] as const;
+
+export type ReservationCategory =
+  (typeof RESERVATION_CATEGORIES)[number]["value"];
+
+export const isReservationCategory = (
+  v: unknown
+): v is ReservationCategory =>
+  RESERVATION_CATEGORIES.some((c) => c.value === v);
+
+export const CATEGORY_LABEL = Object.fromEntries(
+  RESERVATION_CATEGORIES.map((c) => [c.value, c.label])
+) as Record<ReservationCategory, string>;
+
+/** 팀이 없는 예약(개인연습/기타)의 시간표 블록 색 — 합주는 팀 색을 그대로 쓴다 */
+export const CATEGORY_COLORS: Record<ReservationCategory, string> = {
+  ensemble: "#7c3aed", // 팀 정보가 없을 때의 폴백
+  personal: "#14b8a6",
+  etc: "#78716c",
+};
+
 /** 팀원 세션 선택지 — 이 외에는 "직접 입력"으로 자유 입력 */
 export const SESSION_PRESETS = [
   "보컬",
