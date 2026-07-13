@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { validateRange } from "@/lib/validate";
-import { RULES } from "@/lib/constants";
+import { validateBlockRange, validateRange } from "@/lib/validate";
+import { isAdminBlockTeam, RULES } from "@/lib/constants";
 import { dayStartEpoch, kstDateString } from "@/lib/dates";
 import { displayName } from "@/lib/profile";
+import { isExecutive } from "@/lib/roles";
 
 const RESERVATION_SELECT =
   "id, team_id, starts_at, ends_at, note, created_by, created_by_name, created_at, team:teams(id, name, color)";
@@ -87,8 +88,47 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 첫 회차만 검증 — 이후 회차는 정확히 7일 간격이라 반복 목적상 14일 제한을 넘을 수 있다
-  const rangeError = validateRange(new Date(startsAt), new Date(endsAt));
+  const supabase = supabaseAdmin();
+
+  // 사용 금지 팀 예약은 임원 전용 — UI에서 숨기는 것과 별개로 여기서 강제한다
+  const { data: team, error: teamError } = await supabase
+    .from("teams")
+    .select("name")
+    .eq("id", teamId)
+    .single();
+  // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 팀", 그 외는 DB 장애
+  if (teamError && teamError.code !== "PGRST116" && teamError.code !== "22P02") {
+    return NextResponse.json(
+      { error: "팀 조회에 실패했습니다. 잠시 후 다시 시도해주세요." },
+      { status: 500 }
+    );
+  }
+  if (!team) {
+    return NextResponse.json(
+      { error: "팀을 찾을 수 없습니다." },
+      { status: 404 }
+    );
+  }
+  const isBlock = isAdminBlockTeam(team.name);
+  if (isBlock && !(await isExecutive(session.user.id))) {
+    return NextResponse.json(
+      { error: "사용 금지 시간 등록은 임원만 할 수 있습니다." },
+      { status: 403 }
+    );
+  }
+  if (repeatWeeks > 1 && !isBlock) {
+    return NextResponse.json(
+      { error: "매주 반복은 사용 금지 등록에서만 가능합니다." },
+      { status: 400 }
+    );
+  }
+
+  // 사용 금지는 관리용이라 일반 예약 규칙(시간 제한·14일)을 적용하지 않는다
+  // 일반 예약은 첫 회차만 검증 — 반복은 어차피 사용 금지 전용
+  const rangeError = (isBlock ? validateBlockRange : validateRange)(
+    new Date(startsAt),
+    new Date(endsAt)
+  );
   if (rangeError) {
     return NextResponse.json({ error: rangeError }, { status: 400 });
   }
@@ -113,7 +153,6 @@ export async function POST(req: NextRequest) {
     created_by_name: createdByName,
   }));
 
-  const supabase = supabaseAdmin();
   const { data, error } = await supabase
     .from("reservations")
     .insert(rows)

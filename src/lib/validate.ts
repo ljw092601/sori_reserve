@@ -71,3 +71,22 @@ export function validateRange(startsAt: Date, endsAt: Date): string | null {
   }
   return null;
 }
+
+/**
+ * 사용 금지 예약(임원 전용)의 시간 범위 검증.
+ * 일반 예약 규칙(최소/최대 시간, 14일 제한, 과거 금지)은 적용하지 않는다 —
+ * 방학 하루 종일 금지, 몇 주 뒤 행사 금지, 이미 시작된 금지의 종료 시간
+ * 단축 같은 관리 작업이 본래 용도이기 때문. 형식과 순서만 확인한다.
+ */
+export function validateBlockRange(
+  startsAt: Date,
+  endsAt: Date
+): string | null {
+  if (isNaN(startsAt.getTime()) || isNaN(endsAt.getTime())) {
+    return "날짜/시간 형식이 올바르지 않습니다.";
+  }
+  if (startsAt >= endsAt) {
+    return "종료 시간은 시작 시간보다 뒤여야 합니다.";
+  }
+  return null;
+}
