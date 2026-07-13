@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { TIME_ZONE } from "@/lib/constants";
+import { isAdminBlockTeam, TIME_ZONE } from "@/lib/constants";
+import { isExecutive } from "@/lib/roles";
 import type { Team } from "@/lib/types";
 import CancelForm from "./cancel-form";
 
@@ -28,6 +29,11 @@ export default async function ReservationDetailPage({
 
   const team = (Array.isArray(r.team) ? r.team[0] : r.team) as Team;
   const isOwner = session?.user?.id === r.created_by;
+  // 사용 금지 예약은 임원 전용으로 다같이 관리한다 (만든 사람이라도 임원이 아니면 불가)
+  const isBlock = isAdminBlockTeam(team?.name ?? "");
+  const canManage = isBlock
+    ? await isExecutive(session?.user?.id)
+    : isOwner;
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString("ko-KR", {
       timeZone: TIME_ZONE,
@@ -80,7 +86,7 @@ export default async function ReservationDetailPage({
         </dl>
       </div>
 
-      {isOwner ? (
+      {canManage ? (
         <>
           <Link
             href={`/reservations/${r.id}/edit`}
@@ -93,7 +99,9 @@ export default async function ReservationDetailPage({
         </>
       ) : (
         <p className="mt-6 text-center text-sm text-zinc-400">
-          본인이 만든 예약만 수정/취소할 수 있습니다.
+          {isBlock
+            ? "사용 금지 예약은 임원만 수정/취소할 수 있습니다."
+            : "본인이 만든 예약만 수정/취소할 수 있습니다."}
         </p>
       )}
     </div>

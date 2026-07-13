@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { DURATION_OPTIONS } from "@/lib/constants";
+import { DURATION_OPTIONS, isAdminBlockTeam } from "@/lib/constants";
 import { kstToIso } from "@/lib/dates";
 import type { Team } from "@/lib/types";
 import TeamPicker from "@/components/team-picker";
@@ -36,13 +36,16 @@ export default function EditForm({
 
   useEffect(() => {
     // 모집완료된 팀 + 이 예약의 현재 팀(모집중이어도 유지)만 선택 가능
+    // 사용 금지 팀은 숨기되, 지금 수정 중인 예약이 사용 금지 예약이면 유지한다
     fetch("/api/teams")
       .then((res) => res.json())
       .then((data) => {
         const all = (data.teams ?? []) as Team[];
         setTeams(
           all.filter(
-            (t) => t.status === "closed" || t.id === initial.teamId
+            (t) =>
+              (t.status === "closed" || t.id === initial.teamId) &&
+              (!isAdminBlockTeam(t.name) || t.id === initial.teamId)
           )
         );
       })
