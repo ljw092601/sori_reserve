@@ -23,6 +23,7 @@ export default function ReserveForm() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [category, setCategory] = useState<ReservationCategory>("ensemble");
   const [teamId, setTeamId] = useState("");
+  const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -58,6 +59,10 @@ export default function ReserveForm() {
       setError("팀을 선택해주세요.");
       return;
     }
+    if (category === "etc" && !title.trim()) {
+      setError("제목을 입력해주세요.");
+      return;
+    }
     setSubmitting(true);
 
     const form = new FormData(e.currentTarget);
@@ -68,6 +73,8 @@ export default function ReserveForm() {
         category,
         // 합주가 아니면 이전에 골랐던 팀이 남아 있어도 보내지 않는다
         teamId: category === "ensemble" ? teamId : undefined,
+        // 제목은 기타에서만 입력받는다 — 합주는 팀명, 개인연습은 예약자 이름이 제목
+        title: category === "etc" ? title : undefined,
         startsAt: kstToIso(date, start),
         endsAt: kstToIso(date, end),
         note: form.get("note"),
@@ -127,6 +134,27 @@ export default function ReserveForm() {
               </p>
             )}
           </div>
+        )}
+
+        {/* 제목 — 기타일 때만 입력, 개인연습은 예약자 이름이 자동으로 제목이 된다 */}
+        {category === "etc" && (
+          <label className="flex flex-col gap-1 text-sm font-semibold">
+            제목
+            <input
+              type="text"
+              required
+              maxLength={50}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="예: 동아리 회의, 장비 점검"
+              className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
+            />
+          </label>
+        )}
+        {category === "personal" && (
+          <p className="-mt-2 text-xs text-zinc-500">
+            개인연습은 내 이름이 제목으로 표시돼요.
+          </p>
         )}
 
         {/* 날짜 */}

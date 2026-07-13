@@ -37,6 +37,18 @@ export const CATEGORY_LABEL = Object.fromEntries(
   RESERVATION_CATEGORIES.map((c) => [c.value, c.label])
 ) as Record<ReservationCategory, string>;
 
+/**
+ * 예약 제목 — 합주는 팀명, 기타는 입력받은 제목, 개인연습은 예약자 이름.
+ * (개인연습 제목은 저장하지 않고 created_by_name을 그대로 쓴다 —
+ *  닉네임 변경 시 created_by_name이 일괄 갱신되므로 항상 최신 이름이 표시된다.
+ *  title 컬럼 도입 전의 기타 예약도 이름으로 폴백된다)
+ */
+export const reservationTitle = (r: {
+  title?: string | null;
+  created_by_name: string;
+  team?: { name: string } | null;
+}) => r.team?.name ?? r.title ?? r.created_by_name;
+
 /** 팀이 없는 예약(개인연습/기타)의 시간표 블록 색 — 합주는 팀 색을 그대로 쓴다 */
 export const CATEGORY_COLORS: Record<ReservationCategory, string> = {
   ensemble: "#7c3aed", // 팀 정보가 없을 때의 폴백

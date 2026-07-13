@@ -29,7 +29,7 @@ export default async function ReservationEditPage({
   const { data: r } = await supabase
     .from("reservations")
     .select(
-      "id, team_id, category, starts_at, ends_at, note, created_by, team:teams(name)"
+      "id, team_id, category, starts_at, ends_at, title, note, created_by, team:teams(name)"
     )
     .eq("id", id)
     .single();
@@ -67,6 +67,7 @@ export default async function ReservationEditPage({
       initial={{
         category: r.category,
         teamId: r.team_id ?? "",
+        title: r.title ?? "",
         date: kstDateString(new Date(r.starts_at)),
         start: kstTime(r.starts_at),
         end: kstTime(r.ends_at),

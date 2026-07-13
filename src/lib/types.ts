@@ -46,6 +46,8 @@ export type Reservation = {
   category: ReservationCategory;
   starts_at: string; // ISO 8601
   ends_at: string; // ISO 8601
+  /** 기타(etc) 예약만 저장 — 합주는 팀명, 개인연습은 예약자 이름이 제목이 된다 */
+  title?: string | null;
   note: string | null;
   /** 매주 반복 예약 묶음 ID — 단건 예약은 null */
   series_id?: string | null;

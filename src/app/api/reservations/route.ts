@@ -12,7 +12,7 @@ import { displayName } from "@/lib/profile";
 import { isExecutive } from "@/lib/roles";
 
 const RESERVATION_SELECT =
-  "id, team_id, category, starts_at, ends_at, note, created_by, created_by_name, created_at, team:teams(id, name, color)";
+  "id, team_id, category, starts_at, ends_at, title, note, created_by, created_by_name, created_at, team:teams(id, name, color)";
 
 /**
  * GET /api/reservations?from=ISO&to=ISO — 기간과 겹치는 예약 목록 (로그인 불필요)
@@ -46,8 +46,9 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/reservations — 예약 생성 (네이버 로그인 필요)
- * body: { category, teamId?, startsAt, endsAt, note?, repeatWeeks? }
+ * body: { category, teamId?, title?, startsAt, endsAt, note?, repeatWeeks? }
  * 팀(teamId)은 합주(ensemble)일 때만 필수 — 개인연습/기타는 팀 없이 저장한다.
+ * 제목(title)은 기타(etc)일 때만 필수 — 합주는 팀명, 개인연습은 예약자 이름이 제목이 된다.
  * repeatWeeks(2~15)를 주면 매주 같은 요일/시간으로 N건을 한 번에 생성한다.
  * 한 건이라도 겹치면 전체 실패 (단일 INSERT라 원자적).
  */
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
   let body: {
     category?: string;
     teamId?: string;
+    title?: string;
     startsAt?: string;
     endsAt?: string;
     note?: string;
@@ -93,6 +95,19 @@ export async function POST(req: NextRequest) {
   if (category === "ensemble" && !teamId) {
     return NextResponse.json(
       { error: "합주 예약은 팀 선택이 필수입니다." },
+      { status: 400 }
+    );
+  }
+  const title = body.title?.trim();
+  if (category === "etc" && !title) {
+    return NextResponse.json(
+      { error: "기타 예약은 제목을 입력해주세요." },
+      { status: 400 }
+    );
+  }
+  if (title && title.length > 50) {
+    return NextResponse.json(
+      { error: "제목은 50자 이내로 입력해주세요." },
       { status: 400 }
     );
   }
@@ -177,6 +192,8 @@ export async function POST(req: NextRequest) {
     // 합주가 아니면 클라이언트가 teamId를 보냈어도 무시한다 (팀 없는 예약)
     team_id: category === "ensemble" ? teamId : null,
     category,
+    // 제목은 기타에서만 저장 — 개인연습은 created_by_name이 제목 역할을 한다
+    title: category === "etc" ? title : null,
     starts_at: new Date(startMs + i * WEEK_MS).toISOString(),
     ends_at: new Date(endMs + i * WEEK_MS).toISOString(),
     note: note?.trim() || null,

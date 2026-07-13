@@ -13,8 +13,9 @@ const joinedTeamName = (team: unknown): string =>
 /**
  * PATCH /api/reservations/[id] — 예약 수정
  * 예약자 본인, 또는 사용 금지 예약이면 임원 누구나.
- * body: { category, teamId?, startsAt, endsAt, note? }
+ * body: { category, teamId?, title?, startsAt, endsAt, note? }
  * 팀(teamId)은 합주(ensemble)일 때만 필수.
+ * 제목(title)은 기타(etc)일 때만 필수 — 합주는 팀명, 개인연습은 예약자 이름이 제목이 된다.
  */
 export async function PATCH(
   req: NextRequest,
@@ -33,6 +34,7 @@ export async function PATCH(
   let body: {
     category?: string;
     teamId?: string;
+    title?: string;
     startsAt?: string;
     endsAt?: string;
     note?: string;
@@ -62,6 +64,19 @@ export async function PATCH(
   if (category === "ensemble" && !teamId) {
     return NextResponse.json(
       { error: "합주 예약은 팀 선택이 필수입니다." },
+      { status: 400 }
+    );
+  }
+  const title = body.title?.trim();
+  if (category === "etc" && !title) {
+    return NextResponse.json(
+      { error: "기타 예약은 제목을 입력해주세요." },
+      { status: 400 }
+    );
+  }
+  if (title && title.length > 50) {
+    return NextResponse.json(
+      { error: "제목은 50자 이내로 입력해주세요." },
       { status: 400 }
     );
   }
@@ -161,6 +176,8 @@ export async function PATCH(
       // 합주가 아니면 teamId가 와도 무시한다 (팀 없는 예약)
       team_id: category === "ensemble" ? teamId : null,
       category,
+      // 제목은 기타에서만 저장 — 다른 목적으로 바꾸면 이전 제목을 지운다
+      title: category === "etc" ? title : null,
       starts_at: startsAt,
       ends_at: endsAt,
       note: note?.trim() || null,

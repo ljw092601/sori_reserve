@@ -13,7 +13,7 @@ async function fetchWeek(fromIso: string, toIso: string): Promise<Reservation[]>
   const { data, error } = await supabase
     .from("reservations")
     .select(
-      "id, team_id, category, starts_at, ends_at, note, created_by, created_by_name, created_at, team:teams(id, name, color)"
+      "id, team_id, category, starts_at, ends_at, title, note, created_by, created_by_name, created_at, team:teams(id, name, color)"
     )
     .gt("ends_at", fromIso)
     .lt("starts_at", toIso)

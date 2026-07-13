@@ -7,6 +7,7 @@ import {
   CATEGORY_LABEL,
   isAdminBlockTeam,
   TIME_ZONE,
+  reservationTitle,
   type ReservationCategory,
 } from "@/lib/constants";
 import { isExecutive } from "@/lib/roles";
@@ -27,7 +28,7 @@ export default async function ReservationDetailPage({
   const { data: r } = await supabase
     .from("reservations")
     .select(
-      "id, team_id, category, starts_at, ends_at, note, series_id, created_by, created_by_name, team:teams(id, name, color)"
+      "id, team_id, category, starts_at, ends_at, title, note, series_id, created_by, created_by_name, team:teams(id, name, color)"
     )
     .eq("id", id)
     .single();
@@ -57,7 +58,7 @@ export default async function ReservationDetailPage({
       <h1 className="mb-6 text-xl font-bold text-[var(--foreground)]">예약 상세</h1>
 
       <div className="rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm">
-        {/* 헤더 — 합주는 팀명, 개인연습/기타는 카테고리 라벨 */}
+        {/* 헤더 — 합주는 팀명, 개인연습은 예약자 이름, 기타는 입력한 제목 */}
         <div className="mb-4 flex items-center gap-2">
           <span
             className="h-4 w-4 rounded-full shadow-sm ring-2 ring-white"
@@ -66,13 +67,11 @@ export default async function ReservationDetailPage({
             }}
           />
           <span className="font-bold text-[var(--foreground)]">
-            {team?.name ?? CATEGORY_LABEL[category]}
+            {reservationTitle({ ...r, team })}
           </span>
-          {team && (
-            <span className="rounded-full bg-[var(--brand-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--brand-text)]">
-              {CATEGORY_LABEL[category]}
-            </span>
-          )}
+          <span className="rounded-full bg-[var(--brand-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--brand-text)]">
+            {CATEGORY_LABEL[category]}
+          </span>
           {r.series_id && (
             <span className="ml-auto rounded-full bg-[var(--brand-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--brand-text)]">
               🔁 반복 예약

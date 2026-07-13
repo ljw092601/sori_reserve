@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CATEGORY_COLORS,
-  CATEGORY_LABEL,
   DAY_START_HOUR,
   DAY_END_HOUR,
   TIME_ZONE,
+  reservationTitle,
 } from "@/lib/constants";
 import { dayStartEpoch } from "@/lib/dates";
 import type { Reservation } from "@/lib/types";
@@ -188,8 +188,8 @@ export default function WeekGrid({
         }}
       >
         <span className="font-semibold">
-          {/* 팀 없는 예약은 "개인연습 · 홍길동"처럼 목적과 예약자를 보여준다 */}
-          {r.team?.name ?? `${CATEGORY_LABEL[r.category]} · ${r.created_by_name}`}
+          {/* 합주는 팀명, 개인연습은 예약자 이름, 기타는 입력한 제목 */}
+          {reservationTitle(r)}
         </span>{" "}
         {isoTime(r.starts_at)}~{isoTime(r.ends_at)}
         {r.note && <span className="opacity-80"> · {r.note}</span>}

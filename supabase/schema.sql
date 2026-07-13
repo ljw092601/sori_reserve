@@ -48,6 +48,7 @@ create table reservations (
                   -- 예약 목적: ensemble=합주, personal=개인연습, etc=기타
   starts_at       timestamptz not null,
   ends_at         timestamptz not null,
+  title           text,          -- 기타(etc) 예약의 제목 — 합주는 팀명, 개인연습은 예약자 이름을 제목으로 쓴다
   note            text,
   series_id       uuid,          -- 매주 반복 예약 묶음 ID (단건 예약은 null)
   created_by      text not null, -- 네이버 사용자 고유 ID (예약자 본인만 취소 가능)
@@ -131,3 +132,7 @@ create index reservations_starts_at_idx on reservations (starts_at);
 -- alter table reservations
 --   add constraint ensemble_needs_team
 --     check (category <> 'ensemble' or team_id is not null);
+
+-- [마이그레이션] 기타(etc) 예약 제목 — 위까지 실행했다면 아래만 실행:
+-- (제목 없는 기존 기타 예약은 화면에서 예약자 이름으로 표시된다)
+-- alter table reservations add column title text;
