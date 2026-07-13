@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase";
-import { TEAM_STATUS_LABEL } from "@/lib/constants";
+import { TEAM_STATUS_LABEL, isAdminBlockTeam } from "@/lib/constants";
 import type { MemberEntry } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +40,8 @@ export default async function TeamsPage() {
       </p>
     );
   }
-  const posts = data ?? [];
+  // 예약 차단용 "사용 금지" 팀은 모집글이 아니므로 목록에서 숨긴다
+  const posts = (data ?? []).filter((p) => !isAdminBlockTeam(p.name));
 
   return (
     <div className="mx-auto w-full max-w-2xl">

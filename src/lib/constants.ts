@@ -28,6 +28,14 @@ export const SESSION_PRESETS = [
   "키보드",
 ] as const;
 
+/**
+ * 관리용 팀 판별 — 이름에 "사용금지"(공백 무관)가 들어가면
+ * 예약 차단용 팀으로 보고 팀 모집 게시판 목록에서 숨긴다.
+ * (예약 폼의 팀 선택에는 그대로 노출되어야 하므로 API에서는 거르지 않는다)
+ */
+export const isAdminBlockTeam = (name: string) =>
+  name.replace(/\s+/g, "").includes("사용금지");
+
 /** 모집 상태 표시 라벨 */
 export const TEAM_STATUS_LABEL = {
   recruiting: "모집중",
