@@ -41,7 +41,11 @@ create index comments_team_id_idx on comments (team_id);
 
 create table reservations (
   id              uuid primary key default gen_random_uuid(),
-  team_id         uuid not null references teams (id) on delete cascade,
+  team_id         uuid references teams (id) on delete cascade,
+                  -- 합주 예약만 팀을 가진다 (개인연습/기타는 null)
+  category        text not null default 'ensemble'
+                    check (category in ('ensemble', 'personal', 'etc')),
+                  -- 예약 목적: ensemble=합주, personal=개인연습, etc=기타
   starts_at       timestamptz not null,
   ends_at         timestamptz not null,
   note            text,
@@ -51,6 +55,10 @@ create table reservations (
   created_at      timestamptz not null default now(),
 
   constraint valid_range check (starts_at < ends_at),
+
+  -- 합주 예약은 반드시 팀이 있어야 한다
+  constraint ensemble_needs_team
+    check (category <> 'ensemble' or team_id is not null),
 
   -- 어떤 두 예약도 시간이 겹칠 수 없음. 동시 요청이 와도 DB가 하나만 통과시킨다.
   constraint no_overlap exclude using gist (
@@ -113,3 +121,13 @@ create index reservations_starts_at_idx on reservations (starts_at);
 
 -- [마이그레이션] 매주 반복 예약 — 위까지 실행했다면 아래만 실행:
 -- alter table reservations add column series_id uuid;
+
+-- [마이그레이션] 예약 목적 카테고리(합주/개인연습/기타) — 위까지 실행했다면 아래만 실행:
+-- (기존 예약은 전부 팀이 있으므로 기본값 'ensemble'(합주)로 채워진다)
+-- alter table reservations alter column team_id drop not null;
+-- alter table reservations
+--   add column category text not null default 'ensemble'
+--     check (category in ('ensemble', 'personal', 'etc'));
+-- alter table reservations
+--   add constraint ensemble_needs_team
+--     check (category <> 'ensemble' or team_id is not null);

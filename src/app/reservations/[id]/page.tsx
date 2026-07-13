@@ -2,7 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { TIME_ZONE } from "@/lib/constants";
+import {
+  CATEGORY_COLORS,
+  CATEGORY_LABEL,
+  TIME_ZONE,
+  type ReservationCategory,
+} from "@/lib/constants";
 import type { Team } from "@/lib/types";
 import CancelForm from "./cancel-form";
 
@@ -20,13 +25,14 @@ export default async function ReservationDetailPage({
   const { data: r } = await supabase
     .from("reservations")
     .select(
-      "id, team_id, starts_at, ends_at, note, series_id, created_by, created_by_name, team:teams(id, name, color)"
+      "id, team_id, category, starts_at, ends_at, note, series_id, created_by, created_by_name, team:teams(id, name, color)"
     )
     .eq("id", id)
     .single();
   if (!r) notFound();
 
-  const team = (Array.isArray(r.team) ? r.team[0] : r.team) as Team;
+  const team = (Array.isArray(r.team) ? r.team[0] : r.team) as Team | null;
+  const category = r.category as ReservationCategory;
   const isOwner = session?.user?.id === r.created_by;
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString("ko-KR", {
@@ -44,13 +50,22 @@ export default async function ReservationDetailPage({
       <h1 className="mb-6 text-xl font-bold text-[var(--foreground)]">예약 상세</h1>
 
       <div className="rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm">
-        {/* 팀 헤더 */}
+        {/* 헤더 — 합주는 팀명, 개인연습/기타는 카테고리 라벨 */}
         <div className="mb-4 flex items-center gap-2">
           <span
             className="h-4 w-4 rounded-full shadow-sm ring-2 ring-white"
-            style={{ backgroundColor: team?.color }}
+            style={{
+              backgroundColor: team?.color ?? CATEGORY_COLORS[category],
+            }}
           />
-          <span className="font-bold text-[var(--foreground)]">{team?.name}</span>
+          <span className="font-bold text-[var(--foreground)]">
+            {team?.name ?? CATEGORY_LABEL[category]}
+          </span>
+          {team && (
+            <span className="rounded-full bg-[var(--brand-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--brand-text)]">
+              {CATEGORY_LABEL[category]}
+            </span>
+          )}
           {r.series_id && (
             <span className="ml-auto rounded-full bg-[var(--brand-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--brand-text)]">
               🔁 반복 예약

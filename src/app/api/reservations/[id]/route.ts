@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { validateRange } from "@/lib/validate";
+import { isReservationCategory } from "@/lib/constants";
 
 /**
  * PATCH /api/reservations/[id] — 예약 수정 (예약자 본인만)
- * body: { teamId, startsAt, endsAt, note? }
+ * body: { category, teamId?, startsAt, endsAt, note? }
+ * 팀(teamId)은 합주(ensemble)일 때만 필수.
  */
 export async function PATCH(
   req: NextRequest,
@@ -22,6 +24,7 @@ export async function PATCH(
   const { id } = await params;
 
   let body: {
+    category?: string;
     teamId?: string;
     startsAt?: string;
     endsAt?: string;
@@ -33,10 +36,25 @@ export async function PATCH(
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { teamId, startsAt, endsAt, note } = body;
-  if (!teamId || !startsAt || !endsAt) {
+  // 카테고리 도입 전 클라이언트와의 호환을 위해 기본값은 합주
+  const category = body.category ?? "ensemble";
+  if (!isReservationCategory(category)) {
     return NextResponse.json(
-      { error: "팀, 시작/종료 시간은 필수입니다." },
+      { error: "올바른 예약 목적이 아닙니다." },
+      { status: 400 }
+    );
+  }
+
+  const { teamId, startsAt, endsAt, note } = body;
+  if (!startsAt || !endsAt) {
+    return NextResponse.json(
+      { error: "시작/종료 시간은 필수입니다." },
+      { status: 400 }
+    );
+  }
+  if (category === "ensemble" && !teamId) {
+    return NextResponse.json(
+      { error: "합주 예약은 팀 선택이 필수입니다." },
       { status: 400 }
     );
   }
@@ -80,7 +98,9 @@ export async function PATCH(
   const { data, error } = await supabase
     .from("reservations")
     .update({
-      team_id: teamId,
+      // 합주가 아니면 teamId가 와도 무시한다 (팀 없는 예약)
+      team_id: category === "ensemble" ? teamId : null,
+      category,
       starts_at: startsAt,
       ends_at: endsAt,
       note: note?.trim() || null,
