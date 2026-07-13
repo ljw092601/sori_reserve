@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { auth, signIn, signOut } from "@/auth";
 import { displayName } from "@/lib/profile";
+import { isExecutive } from "@/lib/roles";
 import "./globals.css";
 
 const notoSansKR = Noto_Sans_KR({
@@ -27,6 +28,7 @@ export default async function RootLayout({
   const name = session?.user
     ? await displayName(session.user.id, session.user.name ?? "이름 없음")
     : null;
+  const exec = session?.user ? await isExecutive(session.user.id) : false;
 
   return (
     <html lang="ko" className={`h-full antialiased ${notoSansKR.variable}`}>
@@ -57,6 +59,23 @@ export default async function RootLayout({
 
             {/* 우측 내비 */}
             <div className="flex items-center gap-2 sm:gap-3">
+              {/* 개발 환경 전용: 테스트 계정 전환 (TODO: 테스트 끝나면 제거) */}
+              {process.env.NODE_ENV === "development" && (
+                <Link
+                  href="/dev-login"
+                  className="shrink-0 rounded-lg border border-dashed border-amber-400 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+                >
+                  계정 전환
+                </Link>
+              )}
+              {exec && (
+                <Link
+                  href="/admin"
+                  className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--brand-text)] hover:bg-[var(--brand-soft)] transition-colors"
+                >
+                  임원
+                </Link>
+              )}
               <Link
                 href="/teams"
                 className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--brand-text)] hover:bg-[var(--brand-soft)] transition-colors"
