@@ -58,7 +58,8 @@ export default function ReserveForm() {
         startsAt: kstToIso(date, start),
         endsAt: kstToIso(date, end),
         note: form.get("note"),
-        repeatWeeks,
+        // 반복 옵션이 숨겨진 팀이면 이전에 고른 값이 남아 있어도 단건으로 보낸다
+        repeatWeeks: canRepeat ? repeatWeeks : 1,
       }),
     });
 
@@ -73,6 +74,12 @@ export default function ReserveForm() {
   }
 
   const today = kstDateString(new Date());
+
+  // 매주 반복은 "사용금지" 팀을 선택했을 때만 노출한다
+  // 실제 팀명은 "🚫 사용 금지"처럼 꾸며져 있어 공백 제거 후 포함 여부로 판정한다
+  const canRepeat = (teams.find((t) => t.id === teamId)?.name ?? "")
+    .replace(/\s/g, "")
+    .includes(RULES.REPEAT_TEAM_NAME);
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -149,31 +156,33 @@ export default function ReserveForm() {
           ))}
         </div>
 
-        {/* 반복 */}
-        <label className="flex flex-col gap-1 text-sm font-semibold">
-          매주 반복
-          <select
-            value={repeatWeeks}
-            onChange={(e) => setRepeatWeeks(Number(e.target.value))}
-            className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
-          >
-            <option value={1}>반복 안 함</option>
-            {Array.from(
-              { length: RULES.MAX_REPEAT_WEEKS - 1 },
-              (_, i) => i + 2
-            ).map((n) => (
-              <option key={n} value={n}>
-                {n}주 동안 (총 {n}회)
-              </option>
-            ))}
-          </select>
-          {repeatWeeks > 1 && (
-            <span className="text-xs font-normal text-zinc-500">
-              같은 요일·시간으로 {repeatWeeks}주간 예약돼요. 한 주라도 겹치면
-              전체가 등록되지 않아요.
-            </span>
-          )}
-        </label>
+        {/* 반복 — "사용금지" 팀 전용 */}
+        {canRepeat && (
+          <label className="flex flex-col gap-1 text-sm font-semibold">
+            매주 반복
+            <select
+              value={repeatWeeks}
+              onChange={(e) => setRepeatWeeks(Number(e.target.value))}
+              className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
+            >
+              <option value={1}>반복 안 함</option>
+              {Array.from(
+                { length: RULES.MAX_REPEAT_WEEKS - 1 },
+                (_, i) => i + 2
+              ).map((n) => (
+                <option key={n} value={n}>
+                  {n}주 동안 (총 {n}회)
+                </option>
+              ))}
+            </select>
+            {repeatWeeks > 1 && (
+              <span className="text-xs font-normal text-zinc-500">
+                같은 요일·시간으로 {repeatWeeks}주간 예약돼요. 한 주라도 겹치면
+                전체가 등록되지 않아요.
+              </span>
+            )}
+          </label>
+        )}
 
         {/* 메모 */}
         <label className="flex flex-col gap-1 text-sm font-semibold">
