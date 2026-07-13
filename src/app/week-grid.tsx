@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { DAY_START_HOUR, DAY_END_HOUR, TIME_ZONE } from "@/lib/constants";
+import {
+  CATEGORY_COLORS,
+  CATEGORY_LABEL,
+  DAY_START_HOUR,
+  DAY_END_HOUR,
+  TIME_ZONE,
+} from "@/lib/constants";
 import { dayStartEpoch } from "@/lib/dates";
 import type { Reservation } from "@/lib/types";
 
@@ -174,9 +180,17 @@ export default function WeekGrid({
         href={`/reservations/${r.id}`}
         draggable={false}
         className="absolute inset-x-0.5 z-10 overflow-hidden rounded-lg px-2 py-1 text-[11px] leading-tight text-white shadow-md transition-opacity hover:opacity-80 md:text-[13px]"
-        style={{ top, height, backgroundColor: r.team?.color ?? "#7c3aed" }}
+        style={{
+          top,
+          height,
+          // 합주는 팀 색, 개인연습/기타는 카테고리 고정 색
+          backgroundColor: r.team?.color ?? CATEGORY_COLORS[r.category],
+        }}
       >
-        <span className="font-semibold">{r.team?.name}</span>{" "}
+        <span className="font-semibold">
+          {/* 팀 없는 예약은 "개인연습 · 홍길동"처럼 목적과 예약자를 보여준다 */}
+          {r.team?.name ?? `${CATEGORY_LABEL[r.category]} · ${r.created_by_name}`}
+        </span>{" "}
         {isoTime(r.starts_at)}~{isoTime(r.ends_at)}
         {r.note && <span className="opacity-80"> · {r.note}</span>}
       </Link>

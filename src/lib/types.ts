@@ -1,3 +1,5 @@
+import type { ReservationCategory } from "./constants";
+
 /** 팀원 한 명 — name이 빈 문자열이면 그 세션은 모집중 */
 export type MemberEntry = {
   /** 세션 (보컬, 기타, 베이스, 드럼, 키보드 등) */
@@ -38,7 +40,10 @@ export type TeamComment = {
 
 export type Reservation = {
   id: string;
-  team_id: string;
+  /** 합주 예약만 팀을 가진다 — 개인연습/기타는 null */
+  team_id: string | null;
+  /** 예약 목적 (합주/개인연습/기타) */
+  category: ReservationCategory;
   starts_at: string; // ISO 8601
   ends_at: string; // ISO 8601
   note: string | null;
@@ -49,6 +54,6 @@ export type Reservation = {
   /** 표시용 예약자 이름 */
   created_by_name: string;
   created_at: string;
-  /** 조회 시 조인으로 채워짐 */
-  team?: Team;
+  /** 조회 시 조인으로 채워짐 — 팀 없는 예약(개인연습/기타)은 null */
+  team?: Team | null;
 };
