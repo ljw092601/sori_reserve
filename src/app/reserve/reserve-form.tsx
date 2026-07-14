@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   DURATION_OPTIONS,
-  isAdminBlockTeam,
   RESERVATION_CATEGORIES,
   RULES,
   type ReservationCategory,
@@ -17,10 +16,9 @@ import TeamPicker from "@/components/team-picker";
 const fmtTime = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 
-export default function ReserveForm() {
+export default function ReserveForm({ teams }: { teams: Team[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [teams, setTeams] = useState<Team[]>([]);
   const [category, setCategory] = useState<ReservationCategory>("ensemble");
   const [teamId, setTeamId] = useState("");
   const [title, setTitle] = useState("");
@@ -31,19 +29,6 @@ export default function ReserveForm() {
   const [date, setDate] = useState(searchParams.get("date") ?? "");
   const [start, setStart] = useState(searchParams.get("start") ?? "");
   const [end, setEnd] = useState(searchParams.get("end") ?? "");
-
-  useEffect(() => {
-    // 모집이 끝난 팀만 예약할 수 있다
-    // 사용 금지 팀은 임원 전용 페이지(/admin)에서만 다루므로 숨긴다
-    fetch("/api/teams?status=closed")
-      .then((res) => res.json())
-      .then((data) =>
-        setTeams(
-          (data.teams ?? []).filter((t: Team) => !isAdminBlockTeam(t.name))
-        )
-      )
-      .catch(() => setError("팀 목록을 불러오지 못했습니다."));
-  }, []);
 
   /** 시작 시간 + n분 → 종료 시간 (자정 넘으면 23:59로 클램프) */
   function applyDuration(min: number) {

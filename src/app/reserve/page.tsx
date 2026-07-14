@@ -1,7 +1,21 @@
 import { auth, signIn } from "@/auth";
+import { supabaseAdmin } from "@/lib/supabase";
+import { isAdminBlockTeam } from "@/lib/constants";
+import type { Team } from "@/lib/types";
 import ReserveForm from "./reserve-form";
 
 export const dynamic = "force-dynamic";
+
+/** 예약 폼에서 고를 수 있는 팀 = 모집완료된 팀 (사용 금지 팀은 임원 전용이라 숨김) */
+async function fetchClosedTeams(): Promise<Team[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("teams")
+    .select("id, name, color, created_by_name")
+    .eq("status", "closed")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).filter((t) => !isAdminBlockTeam(t.name));
+}
 
 export default async function ReservePage() {
   const session = await auth();
@@ -26,5 +40,16 @@ export default async function ReservePage() {
     );
   }
 
-  return <ReserveForm />;
+  let teams: Team[];
+  try {
+    teams = await fetchClosedTeams();
+  } catch {
+    return (
+      <p className="text-center text-sm text-zinc-500">
+        팀 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
+      </p>
+    );
+  }
+
+  return <ReserveForm teams={teams} />;
 }
