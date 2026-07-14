@@ -17,7 +17,7 @@ export default async function TeamEditPage({
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id, name, status, members, content")
+    .select("id, name, status, members, content, song_url")
     .eq("id", id)
     .single();
   if (!team) notFound();
@@ -50,6 +50,7 @@ export default async function TeamEditPage({
         status: (team.status ?? "recruiting") as "recruiting" | "closed",
         members: (team.members ?? []) as MemberEntry[],
         content: team.content ?? "",
+        songUrl: team.song_url ?? "",
       }}
     />
   );

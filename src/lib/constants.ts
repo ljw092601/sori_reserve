@@ -56,6 +56,9 @@ export const CATEGORY_COLORS: Record<ReservationCategory, string> = {
   etc: "#78716c",
 };
 
+/** 모집글 곡 링크 최대 길이 — 폼 maxLength와 서버 검증이 함께 쓴다 */
+export const SONG_URL_MAX = 300;
+
 /** 팀원 세션 선택지 — 이 외에는 "직접 입력"으로 자유 입력 */
 export const SESSION_PRESETS = [
   "보컬",
@@ -64,6 +67,7 @@ export const SESSION_PRESETS = [
   "드럼",
   "베이스",
   "키보드",
+  "키보드2",
 ] as const;
 
 /**

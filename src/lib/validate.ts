@@ -1,4 +1,4 @@
-import { RULES } from "./constants";
+import { RULES, SONG_URL_MAX } from "./constants";
 import type { MemberEntry } from "./types";
 
 /**
@@ -40,6 +40,35 @@ export function parseMemberEntries(
     entries.push({ session: s, name: n });
   }
   return { entries };
+}
+
+/**
+ * 모집글 곡 링크(선택)를 검증한다.
+ * - 비어 있으면 null (저장 안 함)
+ * - http/https URL만 허용 — javascript: 같은 스킴이 <a href>로 렌더링되는 것을 막는다
+ */
+export function parseSongUrl(
+  input: unknown
+): { url: string | null } | { error: string } {
+  if (input == null) return { url: null };
+  if (typeof input !== "string") {
+    return { error: "곡 링크 형식이 올바르지 않습니다." };
+  }
+  const url = input.trim();
+  if (!url) return { url: null };
+  if (url.length > SONG_URL_MAX) {
+    return { error: `곡 링크는 ${SONG_URL_MAX}자 이내로 입력해주세요.` };
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { error: "곡 링크는 http(s)로 시작하는 전체 주소여야 합니다." };
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return { error: "곡 링크는 http(s)로 시작하는 전체 주소여야 합니다." };
+  }
+  return { url };
 }
 
 /**

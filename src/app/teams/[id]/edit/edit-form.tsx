@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { SONG_URL_MAX } from "@/lib/constants";
 import type { MemberEntry } from "@/lib/types";
 import { MembersInput, StatusRadio } from "../../form-fields";
 
@@ -15,6 +16,7 @@ export default function EditForm({
     status: "recruiting" | "closed";
     members: MemberEntry[];
     content: string;
+    songUrl: string;
   };
 }) {
   const router = useRouter();
@@ -29,6 +31,7 @@ export default function EditForm({
     initial.members.length > 0 ? initial.members : [{ session: "", name: "" }]
   );
   const [content, setContent] = useState(initial.content);
+  const [songUrl, setSongUrl] = useState(initial.songUrl);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,7 +41,7 @@ export default function EditForm({
     const res = await fetch(`/api/teams/${teamId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, status, members, content }),
+      body: JSON.stringify({ name, status, members, content, song_url: songUrl }),
     });
 
     if (res.ok) {
@@ -66,6 +69,21 @@ export default function EditForm({
             onChange={(e) => setName(e.target.value)}
             className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
           />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm font-semibold">
+          곡 링크 (선택)
+          <input
+            type="url"
+            maxLength={SONG_URL_MAX}
+            value={songUrl}
+            onChange={(e) => setSongUrl(e.target.value)}
+            placeholder="예: https://youtu.be/..."
+            className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
+          />
+          <span className="text-xs font-normal text-zinc-400">
+            유튜브 링크를 넣으면 모집글에서 바로 들어볼 수 있어요.
+          </span>
         </label>
 
         <StatusRadio value={status} onChange={setStatus} />

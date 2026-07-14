@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { SONG_URL_MAX } from "@/lib/constants";
 import type { MemberEntry } from "@/lib/types";
 import { MembersInput, StatusRadio } from "../form-fields";
 
@@ -16,6 +17,7 @@ export default function TeamForm() {
     { session: "", name: "" },
   ]);
   const [content, setContent] = useState("");
+  const [songUrl, setSongUrl] = useState("");
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -25,7 +27,7 @@ export default function TeamForm() {
     const res = await fetch("/api/teams", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, status, members, content }),
+      body: JSON.stringify({ name, status, members, content, song_url: songUrl }),
     });
 
     if (res.ok) {
@@ -54,6 +56,21 @@ export default function TeamForm() {
             placeholder="예: 잔나비 - 주저하는 연인들을 위해"
             className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
           />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm font-semibold">
+          곡 링크 (선택)
+          <input
+            type="url"
+            maxLength={SONG_URL_MAX}
+            value={songUrl}
+            onChange={(e) => setSongUrl(e.target.value)}
+            placeholder="예: https://youtu.be/..."
+            className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
+          />
+          <span className="text-xs font-normal text-zinc-400">
+            유튜브 링크를 넣으면 모집글에서 바로 들어볼 수 있어요.
+          </span>
         </label>
 
         <StatusRadio value={status} onChange={setStatus} />

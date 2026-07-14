@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { parseMemberEntries } from "@/lib/validate";
+import { parseMemberEntries, parseSongUrl } from "@/lib/validate";
 
 /** 팀(모집글) 조회 — { team } 또는 { fail: 에러 응답 } */
 async function findTeam(id: string) {
@@ -36,7 +36,9 @@ async function findTeam(id: string) {
 
 /**
  * PATCH /api/teams/[id] — 모집글 수정 (로그인한 누구나)
- * body: { name(곡 제목), status, members?: {session, name}[], content? }
+ * body: { name(곡 제목), status, members?: {session, name}[], content?, song_url? }
+ * 전체 필드 교체 방식 — 생략한 선택 필드(content, song_url)는 null로 저장되므로
+ * 호출자는 항상 모든 필드를 보내야 한다 (수정 폼이 그렇게 동작).
  */
 export async function PATCH(
   req: NextRequest,
@@ -57,6 +59,7 @@ export async function PATCH(
     status?: string;
     members?: unknown;
     content?: string;
+    song_url?: unknown;
   };
   try {
     body = await req.json();
@@ -87,6 +90,10 @@ export async function PATCH(
   if ("error" in parsed) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
+  const song = parseSongUrl(body.song_url);
+  if ("error" in song) {
+    return NextResponse.json({ error: song.error }, { status: 400 });
+  }
 
   const found = await findTeam(id);
   if (found.fail) return found.fail;
@@ -99,6 +106,7 @@ export async function PATCH(
       status: body.status,
       members: parsed.entries,
       content: body.content?.trim() || null,
+      song_url: song.url,
     })
     .eq("id", id)
     .select("id")

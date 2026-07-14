@@ -15,6 +15,7 @@ create table teams (
                   -- 팀원 목록: [{"session": "드럼", "name": "홍길동"}, ...]
                   -- name이 빈 문자열이면 그 세션은 모집중
   content         text,            -- 모집 글 본문
+  song_url        text,            -- 곡 링크 (유튜브 등, 선택)
   created_by      text,            -- 작성자 네이버 ID (null = 관리자가 등록한 팀)
   created_by_name text,            -- 표시용 작성자 이름
   created_at      timestamptz not null default now()
@@ -136,3 +137,6 @@ create index reservations_starts_at_idx on reservations (starts_at);
 -- [마이그레이션] 기타(etc) 예약 제목 — 위까지 실행했다면 아래만 실행:
 -- (제목 없는 기존 기타 예약은 화면에서 예약자 이름으로 표시된다)
 -- alter table reservations add column title text;
+
+-- [마이그레이션] 모집글 곡 링크(유튜브 등, 선택) — 위까지 실행했다면 아래만 실행:
+-- alter table teams add column song_url text;

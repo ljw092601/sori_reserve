@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { TEAM_STATUS_LABEL, TIME_ZONE } from "@/lib/constants";
 import type { MemberEntry, TeamComment } from "@/lib/types";
+import { youtubeEmbedUrl, youtubeVideoId } from "@/lib/youtube";
 import DeleteForm from "./delete-form";
 import CommentForm from "./comment-form";
 import CommentDeleteButton from "./comment-delete-button";
@@ -22,7 +23,7 @@ export default async function TeamDetailPage({
   const { data: team } = await supabase
     .from("teams")
     .select(
-      "id, name, color, status, members, content, created_by, created_by_name, created_at"
+      "id, name, color, status, members, content, song_url, created_by, created_by_name, created_at"
     )
     .eq("id", id)
     .single();
@@ -46,6 +47,13 @@ export default async function TeamDetailPage({
   const status = (team.status ?? "recruiting") as "recruiting" | "closed";
   const members = (team.members ?? []) as MemberEntry[];
   const isOwner = !!team.created_by && session?.user?.id === team.created_by;
+  // 렌더 직전 재검증 — 검증 도입 전 저장분이나 DB에 직접 넣은 값이
+  // javascript: 같은 스킴일 수 있으므로 http(s)가 아니면 표시하지 않는다
+  const songUrl =
+    team.song_url && /^https?:\/\//i.test(team.song_url)
+      ? team.song_url
+      : null;
+  const videoId = songUrl ? youtubeVideoId(songUrl) : null;
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString("ko-KR", {
       timeZone: TIME_ZONE,
@@ -83,6 +91,27 @@ export default async function TeamDetailPage({
           <p className="mb-3 whitespace-pre-line text-sm text-zinc-700">
             {team.content}
           </p>
+        )}
+        {songUrl && (
+          <div className="mb-3 flex flex-col gap-2">
+            {videoId && (
+              <iframe
+                src={youtubeEmbedUrl(videoId)}
+                title={`${team.name} 곡 미리듣기`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="aspect-video w-full rounded-xl border border-[var(--border)]"
+              />
+            )}
+            <a
+              href={songUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 self-start text-sm font-semibold text-[var(--brand-text)] hover:underline"
+            >
+              🎧 곡 링크 열기 ↗
+            </a>
+          </div>
         )}
         {members.length > 0 && (
           <div className="mb-3">

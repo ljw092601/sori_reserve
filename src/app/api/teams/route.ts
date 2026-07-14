@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { TEAM_COLORS } from "@/lib/constants";
-import { parseMemberEntries } from "@/lib/validate";
+import { parseMemberEntries, parseSongUrl } from "@/lib/validate";
 import { displayName } from "@/lib/profile";
 
 const TEAM_SELECT =
-  "id, name, color, status, members, content, created_by, created_by_name, created_at";
+  "id, name, color, status, members, content, song_url, created_by, created_by_name, created_at";
 
 /**
  * GET /api/teams — 모집글(팀) 목록 (로그인 불필요)
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/teams — 팀원 모집글 쓰기 (네이버 로그인 필요)
- * body: { name(곡 제목), status?, members?: {session, name}[], content? }
+ * body: { name(곡 제목), status?, members?: {session, name}[], content?, song_url? }
  * 색상은 사용 중이 아닌 팔레트 색을 자동 배정.
  */
 export async function POST(req: NextRequest) {
@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
     status?: string;
     members?: unknown;
     content?: string;
+    song_url?: unknown;
   };
   try {
     body = await req.json();
@@ -81,6 +82,10 @@ export async function POST(req: NextRequest) {
   if ("error" in parsed) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
+  const song = parseSongUrl(body.song_url);
+  if ("error" in song) {
+    return NextResponse.json({ error: song.error }, { status: 400 });
+  }
 
   const supabase = supabaseAdmin();
 
@@ -98,6 +103,7 @@ export async function POST(req: NextRequest) {
       status,
       members: parsed.entries,
       content: body.content?.trim() || null,
+      song_url: song.url,
       created_by: session.user.id,
       created_by_name: await displayName(
         session.user.id,

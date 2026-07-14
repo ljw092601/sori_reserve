@@ -20,6 +20,8 @@ export type Team = {
   members?: MemberEntry[];
   /** 모집 글 본문 */
   content?: string | null;
+  /** 곡 링크 (유튜브 등, 선택) — 저장 전 http(s) URL인지 검증한다 */
+  song_url?: string | null;
   /** 작성자 네이버 ID — null이면 관리자가 등록한 팀 */
   created_by?: string | null;
   /** 표시용 작성자 이름 */
