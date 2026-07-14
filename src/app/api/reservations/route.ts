@@ -113,6 +113,13 @@ export async function POST(req: NextRequest) {
 
   const supabase = supabaseAdmin();
 
+  // 닉네임 조회는 아래 검사들과 독립적이므로 미리 시작해 왕복을 겹친다
+  // (displayName은 실패해도 fallback을 반환하므로 reject되지 않는다)
+  const createdByNamePromise = displayName(
+    session.user.id,
+    session.user.name ?? "이름 없음"
+  );
+
   // 사용 금지 팀 예약은 임원 전용 — UI에서 숨기는 것과 별개로 여기서 강제한다
   // 합주가 아니면 팀 없이 저장되므로 사용 금지일 수 없다
   let isBlock = false;
@@ -182,10 +189,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const createdByName = await displayName(
-    session.user.id,
-    session.user.name ?? "이름 없음"
-  );
+  const createdByName = await createdByNamePromise;
 
   const { data, error } = await supabase
     .from("reservations")

@@ -25,10 +25,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth();
-  const name = session?.user
-    ? await displayName(session.user.id, session.user.name ?? "이름 없음")
-    : null;
-  const exec = session?.user ? await isExecutive(session.user.id) : false;
+  // 둘 다 내부적으로 cache()된 fetchProfile을 쓰므로 쿼리는 1회만 나간다
+  const [name, exec] = session?.user
+    ? await Promise.all([
+        displayName(session.user.id, session.user.name ?? "이름 없음"),
+        isExecutive(session.user.id),
+      ])
+    : [null, false];
 
   return (
     <html lang="ko" className={`h-full antialiased ${notoSansKR.variable}`}>
