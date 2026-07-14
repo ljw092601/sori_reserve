@@ -7,10 +7,10 @@ import {
   CATEGORY_COLORS,
   DAY_START_HOUR,
   DAY_END_HOUR,
-  TIME_ZONE,
   reservationTitle,
 } from "@/lib/constants";
 import { dayStartEpoch } from "@/lib/dates";
+import type { BlockRule } from "@/lib/block-rules";
 import type { Reservation } from "@/lib/types";
 
 const HOUR_PX = 48;
@@ -30,14 +30,6 @@ const clamp = (v: number, lo: number, hi: number) =>
 /** 자정 기준 분 → "HH:mm" */
 const fmtTime = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
-
-const isoTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString("ko-KR", {
-    timeZone: TIME_ZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
 
 const weekdayOf = (day: string) =>
   WEEKDAYS[new Date(day + "T00:00:00Z").getUTCDay()];
@@ -65,10 +57,12 @@ export default function WeekGrid({
   days,
   today,
   reservations,
+  blockRules,
 }: {
   days: string[];
   today: string;
   reservations: Reservation[];
+  blockRules: BlockRule[];
 }) {
   const router = useRouter();
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -87,21 +81,65 @@ export default function WeekGrid({
     setSel(null);
   }, [days]);
 
-  // 예약을 날짜별 블록(top/height px)으로 변환. 표시 범위 밖은 잘라낸다.
-  const blocksByDay = days.map((day) => {
-    const visStart = dayStartEpoch(day) + DAY_START_HOUR * 3_600_000;
-    const visEnd = dayStartEpoch(day) + DAY_END_HOUR * 3_600_000;
-    return reservations.flatMap((r) => {
-      const s = Math.max(Date.parse(r.starts_at), visStart);
-      const e = Math.min(Date.parse(r.ends_at), visEnd);
-      if (e <= s) return [];
+  // 정기 사용 금지 규칙을 요일별 띠(top/height px)로 변환. 표시 범위 밖은 잘라낸다.
+  const ruleBandsByDay = days.map((day) => {
+    const dow = new Date(day + "T00:00:00Z").getUTCDay();
+    return blockRules.flatMap((rule) => {
+      const s = Math.max(rule.start_min, DAY_START_HOUR * 60);
+      const e = Math.min(rule.end_min, DAY_END_HOUR * 60);
+      if (rule.day_of_week !== dow || e <= s) return [];
       return [
         {
-          r,
-          top: ((s - visStart) / 3_600_000) * HOUR_PX,
-          height: ((e - s) / 3_600_000) * HOUR_PX,
+          rule,
+          top: ((s - DAY_START_HOUR * 60) / 60) * HOUR_PX,
+          height: ((e - s) / 60) * HOUR_PX,
         },
       ];
+    });
+  });
+
+  // 예약을 날짜별 블록(top/height px)으로 변환. 표시 범위 밖은 잘라내고,
+  // 정기 사용 금지 규칙과 겹치는 부분은 규칙이 우선하도록 빼고 그린다 —
+  // 규칙 도입 전에 잡힌 예약은 남은 시간대만 보인다. (DB의 예약 시간은
+  // 그대로라 규칙을 수정/삭제하면 표시도 원래대로 돌아온다)
+  const blocksByDay = days.map((day) => {
+    const dayStart = dayStartEpoch(day);
+    const visStart = dayStart + DAY_START_HOUR * 3_600_000;
+    const visEnd = dayStart + DAY_END_HOUR * 3_600_000;
+    const dow = new Date(day + "T00:00:00Z").getUTCDay();
+    const ruleSpans = blockRules
+      .filter((rule) => rule.day_of_week === dow)
+      .map((rule) => ({
+        s: dayStart + rule.start_min * 60_000,
+        e: dayStart + rule.end_min * 60_000,
+      }));
+    return reservations.flatMap((r) => {
+      // 규칙 구간을 하나씩 빼면서 남는 조각들 (중간이 가리면 앞뒤 두 조각)
+      let segs = [
+        {
+          s: Math.max(Date.parse(r.starts_at), visStart),
+          e: Math.min(Date.parse(r.ends_at), visEnd),
+        },
+      ];
+      for (const span of ruleSpans) {
+        segs = segs.flatMap(({ s, e }) => {
+          const pieces = [];
+          if (s < span.s) pieces.push({ s, e: Math.min(e, span.s) });
+          if (e > span.e) pieces.push({ s: Math.max(s, span.e), e });
+          return pieces;
+        });
+      }
+      return segs
+        .filter(({ s, e }) => e > s)
+        .map(({ s, e }) => ({
+          r,
+          // 한 예약이 여러 조각으로 갈라질 수 있어 id만으로는 key가 안 된다
+          key: `${r.id}:${s}`,
+          // 시간 표기도 잘린 조각 기준 — "13~15시 금지"에 걸린 14~17시 예약은 15:00~17:00으로 보인다
+          label: `${fmtTime(Math.round((s - dayStart) / 60_000))}~${fmtTime(Math.round((e - dayStart) / 60_000))}`,
+          top: ((s - visStart) / 3_600_000) * HOUR_PX,
+          height: ((e - s) / 3_600_000) * HOUR_PX,
+        }));
     });
   });
 
@@ -173,10 +211,29 @@ export default function WeekGrid({
     );
   };
 
+  /** 정기 사용 금지 띠 — 클릭 대상이 아니라 안내용이라 포인터 이벤트를 받지 않는다 */
+  const renderRuleBands = (dayIdx: number) =>
+    ruleBandsByDay[dayIdx].map(({ rule, top, height }) => (
+      <div
+        key={rule.id}
+        className="pointer-events-none absolute inset-x-0.5 z-0 overflow-hidden rounded-lg px-2 py-1 text-[11px] leading-tight text-zinc-500 md:text-[13px]"
+        style={{
+          top,
+          height,
+          background:
+            "repeating-linear-gradient(135deg, #e4e4e7 0 8px, #f4f4f5 8px 16px)",
+        }}
+      >
+        <span className="font-semibold">사용 금지</span>{" "}
+        {fmtTime(rule.start_min)}~{fmtTime(rule.end_min)}
+        {rule.note && <span className="opacity-80"> · {rule.note}</span>}
+      </div>
+    ));
+
   const renderBlocks = (dayIdx: number) =>
-    blocksByDay[dayIdx].map(({ r, top, height }) => (
+    blocksByDay[dayIdx].map(({ r, key, label, top, height }) => (
       <Link
-        key={r.id}
+        key={key}
         href={`/reservations/${r.id}`}
         draggable={false}
         className="absolute inset-x-0.5 z-10 overflow-hidden rounded-lg px-2 py-1 text-[11px] leading-tight text-white shadow-md transition-opacity hover:opacity-80 md:text-[13px]"
@@ -191,7 +248,7 @@ export default function WeekGrid({
           {/* 합주는 팀명, 개인연습은 예약자 이름, 기타는 입력한 제목 */}
           {reservationTitle(r)}
         </span>{" "}
-        {isoTime(r.starts_at)}~{isoTime(r.ends_at)}
+        {label}
         {r.note && <span className="opacity-80"> · {r.note}</span>}
       </Link>
     ));
@@ -265,6 +322,7 @@ export default function WeekGrid({
             onClick={handleDayTap}
           >
             {hourRows}
+            {renderRuleBands(selected)}
             {renderBlocks(selected)}
             {renderSelection(selected)}
           </div>
@@ -336,6 +394,7 @@ export default function WeekGrid({
                 }}
               >
                 {hourRows}
+                {renderRuleBands(i)}
                 {renderBlocks(i)}
 
                 {/* 드래그 선택 표시 */}

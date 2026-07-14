@@ -6,8 +6,6 @@ export const RULES = {
   MAX_MINUTES: 240,
   /** 오늘부터 며칠 뒤까지 예약 가능한지 */
   MAX_DAYS_AHEAD: 14,
-  /** 매주 반복 예약 최대 주 수 (반복은 14일 제한과 무관하게 이 범위까지 허용) */
-  MAX_REPEAT_WEEKS: 15,
 } as const;
 
 /** 예약 폼의 빠른 시간 선택 버튼 — RULES 범위를 벗어나는 항목은 자동 제외 */
@@ -68,8 +66,9 @@ export const SESSION_PRESETS = [
 
 /**
  * 관리용 팀 판별 — 이름에 "사용금지"(공백 무관)가 들어가면 예약 차단용 팀.
+ * 특정 날짜를 단건으로 막는 용도. (매주 반복되는 금지는 block_rules 테이블이 담당)
  * 팀 모집 게시판과 일반 예약 폼에서 숨기고, 등록은 임원 전용 페이지(/admin)에서만 한다.
- * 예약 API도 이 판별로 임원 여부를 강제한다 (매주 반복도 이 팀 전용).
+ * 예약 API도 이 판별로 임원 여부를 강제한다.
  */
 export const isAdminBlockTeam = (name: string) =>
   name.replace(/\s+/g, "").includes("사용금지");

@@ -7,6 +7,7 @@ import {
   isReservationCategory,
   RULES,
 } from "@/lib/constants";
+import { findRuleConflict, ruleLabel } from "@/lib/block-rules";
 import { dayStartEpoch, kstDateString } from "@/lib/dates";
 import { displayName } from "@/lib/profile";
 import { isExecutive } from "@/lib/roles";
@@ -46,11 +47,10 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/reservations — 예약 생성 (네이버 로그인 필요)
- * body: { category, teamId?, title?, startsAt, endsAt, note?, repeatWeeks? }
+ * body: { category, teamId?, title?, startsAt, endsAt, note? }
  * 팀(teamId)은 합주(ensemble)일 때만 필수 — 개인연습/기타는 팀 없이 저장한다.
  * 제목(title)은 기타(etc)일 때만 필수 — 합주는 팀명, 개인연습은 예약자 이름이 제목이 된다.
- * repeatWeeks(2~15)를 주면 매주 같은 요일/시간으로 N건을 한 번에 생성한다.
- * 한 건이라도 겹치면 전체 실패 (단일 INSERT라 원자적).
+ * 정기 사용 금지 규칙(block_rules)과 겹치는 일반 예약은 거부한다.
  */
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -68,7 +68,6 @@ export async function POST(req: NextRequest) {
     startsAt?: string;
     endsAt?: string;
     note?: string;
-    repeatWeeks?: number;
   };
   try {
     body = await req.json();
@@ -112,18 +111,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const repeatWeeks = body.repeatWeeks ?? 1;
-  if (
-    !Number.isInteger(repeatWeeks) ||
-    repeatWeeks < 1 ||
-    repeatWeeks > RULES.MAX_REPEAT_WEEKS
-  ) {
-    return NextResponse.json(
-      { error: `반복은 ${RULES.MAX_REPEAT_WEEKS}주까지 가능합니다.` },
-      { status: 400 }
-    );
-  }
-
   const supabase = supabaseAdmin();
 
   // 사용 금지 팀 예약은 임원 전용 — UI에서 숨기는 것과 별개로 여기서 강제한다
@@ -160,16 +147,7 @@ export async function POST(req: NextRequest) {
       );
     }
   }
-  // 반복은 14일 제한을 넘을 수 있어, 일반 예약이 이 경로로 우회하면 안 된다
-  if (repeatWeeks > 1 && !isBlock) {
-    return NextResponse.json(
-      { error: "매주 반복은 사용 금지 등록에서만 가능합니다." },
-      { status: 400 }
-    );
-  }
-
   // 사용 금지는 관리용이라 일반 예약 규칙(시간 제한·14일)을 적용하지 않는다
-  // 일반 예약은 첫 회차만 검증 — 반복은 어차피 사용 금지 전용
   const rangeError = (isBlock ? validateBlockRange : validateRange)(
     new Date(startsAt),
     new Date(endsAt)
@@ -178,45 +156,58 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: rangeError }, { status: 400 });
   }
 
+  // 정기 사용 금지 규칙과 겹치는 일반 예약은 거부 (사용 금지 등록 자체는 예외)
+  if (!isBlock) {
+    const { data: rules, error: rulesError } = await supabase
+      .from("block_rules")
+      .select("*");
+    // 42P01(테이블 없음 = 마이그레이션 전)만 규칙 없음으로 취급 — 그 외 조회
+    // 실패까지 통과시키면 일시 장애 때 금지 시간이 뚫린다
+    if (rulesError && rulesError.code !== "42P01") {
+      return NextResponse.json(
+        { error: "사용 금지 규칙 확인에 실패했습니다. 잠시 후 다시 시도해주세요." },
+        { status: 500 }
+      );
+    }
+    const conflict = findRuleConflict(rules ?? [], startsAt, endsAt);
+    if (conflict) {
+      return NextResponse.json(
+        {
+          error: `${ruleLabel(conflict)}은 사용 금지 시간입니다.${
+            conflict.note ? ` (${conflict.note})` : ""
+          }`,
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   const createdByName = await displayName(
     session.user.id,
     session.user.name ?? "이름 없음"
   );
-  // 한국은 서머타임이 없어 7일 = 정확히 7*24시간 (KST 벽시계 시간이 유지된다)
-  const WEEK_MS = 7 * 86_400_000;
-  const startMs = Date.parse(startsAt);
-  const endMs = Date.parse(endsAt);
-  const seriesId = repeatWeeks > 1 ? crypto.randomUUID() : null;
-
-  const rows = Array.from({ length: repeatWeeks }, (_, i) => ({
-    // 합주가 아니면 클라이언트가 teamId를 보냈어도 무시한다 (팀 없는 예약)
-    team_id: category === "ensemble" ? teamId : null,
-    category,
-    // 제목은 기타에서만 저장 — 개인연습은 created_by_name이 제목 역할을 한다
-    title: category === "etc" ? title : null,
-    starts_at: new Date(startMs + i * WEEK_MS).toISOString(),
-    ends_at: new Date(endMs + i * WEEK_MS).toISOString(),
-    note: note?.trim() || null,
-    series_id: seriesId,
-    created_by: session.user.id,
-    created_by_name: createdByName,
-  }));
 
   const { data, error } = await supabase
     .from("reservations")
-    .insert(rows)
+    .insert({
+      // 합주가 아니면 클라이언트가 teamId를 보냈어도 무시한다 (팀 없는 예약)
+      team_id: category === "ensemble" ? teamId : null,
+      category,
+      // 제목은 기타에서만 저장 — 개인연습은 created_by_name이 제목 역할을 한다
+      title: category === "etc" ? title : null,
+      starts_at: new Date(Date.parse(startsAt)).toISOString(),
+      ends_at: new Date(Date.parse(endsAt)).toISOString(),
+      note: note?.trim() || null,
+      created_by: session.user.id,
+      created_by_name: createdByName,
+    })
     .select(RESERVATION_SELECT);
 
   if (error) {
     // 23P01: exclusion constraint 위반 = 다른 예약과 시간이 겹침
     if (error.code === "23P01") {
       return NextResponse.json(
-        {
-          error:
-            repeatWeeks > 1
-              ? "반복 기간 중 이미 겹치는 예약이 있어 전체가 등록되지 않았습니다."
-              : "이미 그 시간에 다른 예약이 있습니다.",
-        },
+        { error: "이미 그 시간에 다른 예약이 있습니다." },
         { status: 409 }
       );
     }

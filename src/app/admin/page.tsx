@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth, signIn } from "@/auth";
 import { isExecutive } from "@/lib/roles";
 import BlockForm from "./block-form";
+import BlockRulesSection from "./block-rules-section";
 import MembersSection from "./members-section";
 
 export const dynamic = "force-dynamic";
@@ -57,9 +58,11 @@ export default async function AdminPage() {
         임원 전용
       </h1>
       <p className="mb-6 text-sm text-zinc-500">
-        동아리방을 예약할 수 없게 막을 시간을 등록해요. (청소, 행사, 방학 등)
+        동아리방을 예약할 수 없게 막을 시간을 등록해요. (정기 회의, 청소,
+        행사 등)
       </p>
       <div className="flex flex-col gap-6">
+        <BlockRulesSection />
         <BlockForm />
         <MembersSection />
       </div>

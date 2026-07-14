@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase";
 import { addDays, dayStartEpoch, kstDateString, mondayOf } from "@/lib/dates";
+import type { BlockRule } from "@/lib/block-rules";
 import type { Reservation, Team } from "@/lib/types";
 import WeekGrid from "./week-grid";
 
@@ -26,6 +27,17 @@ async function fetchWeek(fromIso: string, toIso: string): Promise<Reservation[]>
   }));
 }
 
+/** 정기 사용 금지 규칙 — 테이블이 아직 없으면(마이그레이션 전) 빈 목록으로 처리 */
+async function fetchBlockRules(): Promise<BlockRule[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("block_rules")
+    .select("*")
+    .order("day_of_week")
+    .order("start_min");
+  if (error) return [];
+  return data ?? [];
+}
+
 export default async function Home({
   searchParams,
 }: {
@@ -38,11 +50,15 @@ export default async function Home({
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   let reservations: Reservation[];
+  let blockRules: BlockRule[];
   try {
-    reservations = await fetchWeek(
-      new Date(dayStartEpoch(days[0])).toISOString(),
-      new Date(dayStartEpoch(addDays(weekStart, 7))).toISOString()
-    );
+    [reservations, blockRules] = await Promise.all([
+      fetchWeek(
+        new Date(dayStartEpoch(days[0])).toISOString(),
+        new Date(dayStartEpoch(addDays(weekStart, 7))).toISOString()
+      ),
+      fetchBlockRules(),
+    ]);
   } catch (e) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
@@ -83,7 +99,12 @@ export default async function Home({
         </nav>
       </div>
 
-      <WeekGrid days={days} today={today} reservations={reservations} />
+      <WeekGrid
+        days={days}
+        today={today}
+        reservations={reservations}
+        blockRules={blockRules}
+      />
     </div>
   );
 }
