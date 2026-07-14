@@ -43,6 +43,27 @@ export async function POST(
   }
 
   const supabase = supabaseAdmin();
+
+  // 삭제 대기 게시판의 글 — purge 때 댓글도 함께 사라지므로 새 댓글을 받지 않는다
+  // (게시판 없는 글은 boards가 null이라 통과. 없는 글은 아래 insert의 FK가 걸러준다)
+  const { data: team, error: teamError } = await supabase
+    .from("teams")
+    .select("id, boards(deleted_at)")
+    .eq("id", id)
+    .maybeSingle();
+  if (teamError && teamError.code !== "22P02") {
+    return NextResponse.json({ error: teamError.message }, { status: 500 });
+  }
+  if (
+    (team?.boards as unknown as { deleted_at: string | null } | null)
+      ?.deleted_at
+  ) {
+    return NextResponse.json(
+      { error: "삭제 대기 중인 게시판의 글에는 댓글을 쓸 수 없습니다." },
+      { status: 400 }
+    );
+  }
+
   const { data, error } = await supabase
     .from("comments")
     .insert({

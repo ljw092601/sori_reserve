@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
   if (category === "ensemble") {
     const { data: team, error: teamError } = await supabase
       .from("teams")
-      .select("name")
+      .select("name, boards(deleted_at)")
       .eq("id", teamId)
       .single();
     // PGRST116(결과 0건)·22P02(uuid 형식 오류)는 "없는 팀", 그 외는 DB 장애
@@ -137,6 +137,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "팀을 찾을 수 없습니다." },
         { status: 404 }
+      );
+    }
+    // 삭제 대기 게시판의 팀 — purge 때 예약까지 사라지므로 새 예약을 받지 않는다
+    // (게시판 없는 관리용 팀은 boards가 null이라 통과)
+    if (
+      (team.boards as unknown as { deleted_at: string | null } | null)
+        ?.deleted_at
+    ) {
+      return NextResponse.json(
+        { error: "삭제 대기 중인 게시판의 팀으로는 예약할 수 없습니다." },
+        { status: 400 }
       );
     }
     isBlock = isAdminBlockTeam(team.name);

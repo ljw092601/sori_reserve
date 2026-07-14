@@ -77,6 +77,12 @@ export const SESSION_PRESETS = [
 export const isAdminBlockTeam = (name: string) =>
   name.replace(/\s+/g, "").includes("사용금지");
 
+/**
+ * 게시판 삭제 유예기간 (시간) — 이 시간 안에는 임원이 되돌릴 수 있고,
+ * 지나면 /teams 방문 시점에 글·댓글·예약까지 영구 삭제된다.
+ */
+export const BOARD_DELETE_GRACE_HOURS = 24;
+
 /** 모집 상태 표시 라벨 */
 export const TEAM_STATUS_LABEL = {
   recruiting: "모집중",

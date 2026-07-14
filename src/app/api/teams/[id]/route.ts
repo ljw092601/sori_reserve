@@ -8,7 +8,7 @@ async function findTeam(id: string) {
   const supabase = supabaseAdmin();
   const { data: team, error } = await supabase
     .from("teams")
-    .select("id, created_by")
+    .select("id, created_by, boards(deleted_at)")
     .eq("id", id)
     .single();
 
@@ -97,6 +97,16 @@ export async function PATCH(
 
   const found = await findTeam(id);
   if (found.fail) return found.fail;
+  // 삭제 대기 게시판의 글 — purge 때 수정 내용도 함께 사라지므로 받지 않는다
+  if (
+    (found.team.boards as unknown as { deleted_at: string | null } | null)
+      ?.deleted_at
+  ) {
+    return NextResponse.json(
+      { error: "삭제 대기 중인 게시판의 글은 수정할 수 없습니다." },
+      { status: 400 }
+    );
+  }
 
   const supabase = supabaseAdmin();
   const { data, error } = await supabase

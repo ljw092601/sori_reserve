@@ -23,11 +23,20 @@ export default async function TeamDetailPage({
   const { data: team } = await supabase
     .from("teams")
     .select(
-      "id, name, color, status, members, content, song_url, created_by, created_by_name, created_at"
+      "id, board_id, name, color, status, members, content, song_url, created_by, created_by_name, created_at, boards(name, deleted_at)"
     )
     .eq("id", id)
     .single();
   if (!team) notFound();
+
+  // FK 조인 — 게시판 도입 전 글이나 관리용 팀은 null일 수 있다
+  const board = team.boards as unknown as {
+    name: string;
+    deleted_at: string | null;
+  } | null;
+  // 삭제 대기 게시판의 글은 숨긴다 — 유예기간 중 댓글 등을 새로 받으면 purge 때 함께 사라진다
+  if (board?.deleted_at) notFound();
+  const backHref = team.board_id ? `/teams?board=${team.board_id}` : "/teams";
 
   const [{ data: comments }, { data: upcoming }] = await Promise.all([
     supabase
@@ -67,6 +76,12 @@ export default async function TeamDetailPage({
 
   return (
     <div className="mx-auto w-full max-w-md">
+      <Link
+        href={backHref}
+        className="mb-2 inline-block text-sm text-zinc-500 hover:text-[var(--brand-text)] hover:underline"
+      >
+        ← {board?.name ?? "팀 모집 게시판"}
+      </Link>
       <h1 className="mb-6 text-xl font-bold text-[var(--foreground)]">팀원 모집</h1>
 
       {/* 팀 정보 카드 */}
@@ -220,7 +235,7 @@ export default async function TeamDetailPage({
             수정하기
           </Link>
           {isOwner ? (
-            <DeleteForm teamId={team.id} teamName={team.name} />
+            <DeleteForm teamId={team.id} teamName={team.name} backHref={backHref} />
           ) : (
             <p className="mt-3 text-center text-xs text-zinc-400">
               모집글 삭제는 작성자만 할 수 있습니다.

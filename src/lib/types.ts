@@ -8,9 +8,24 @@ export type MemberEntry = {
   name: string;
 };
 
+/** 공연별 팀 모집 게시판 — 생성/이름 변경/삭제는 임원만 */
+export type Board = {
+  id: string;
+  /** 공연 이름 (예: 2026 가을 정기공연) */
+  name: string;
+  /** 만든 임원 네이버 ID */
+  created_by?: string | null;
+  created_by_name?: string | null;
+  created_at?: string;
+  /** 삭제 대기 시각 — 유예기간(24시간) 안에는 되돌리기 가능, null이면 정상 */
+  deleted_at?: string | null;
+};
+
 /** 팀 = 팀원 모집글. name에는 곡 제목이 들어간다. */
 export type Team = {
   id: string;
+  /** 소속 게시판 — null이면 사용금지 등 관리용 팀 */
+  board_id?: string | null;
   /** 곡 제목 — 시간표/예약 드롭다운에 그대로 표시 */
   name: string;
   color: string;

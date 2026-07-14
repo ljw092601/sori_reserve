@@ -4,9 +4,23 @@
 -- 시간 범위 겹침 방지(exclusion constraint)에 필요한 확장
 create extension if not exists btree_gist;
 
+-- 공연별 팀 모집 게시판 — 생성/이름 변경/삭제는 임원만 (API에서 검증)
+create table boards (
+  id              uuid primary key default gen_random_uuid(),
+  name            text not null,   -- 공연 이름 (예: 2026 가을 정기공연)
+  created_by      text,            -- 만든 임원 네이버 ID
+  created_by_name text,            -- 표시용 이름
+  created_at      timestamptz not null default now(),
+  deleted_at      timestamptz      -- 삭제 대기 시각 — 24시간 안에는 되돌리기 가능,
+                                   -- 지나면 /teams 방문 시점에 영구 삭제된다 (lazy purge)
+);
+
 -- 팀 = 팀원 모집글. name에는 곡 제목을 저장한다 (시간표/예약 드롭다운에 그대로 표시).
 create table teams (
   id              uuid primary key default gen_random_uuid(),
+  board_id        uuid references boards (id) on delete cascade,
+                  -- 소속 게시판 (null = 사용금지 등 관리용 팀)
+                  -- 게시판 영구 삭제 시 모집글·댓글·예약도 함께 삭제된다
   name            text not null,   -- 곡 제목 (같은 곡으로 여러 모집글 가능)
   color           text not null default '#6366f1',
   status          text not null default 'recruiting'
@@ -20,6 +34,8 @@ create table teams (
   created_by_name text,            -- 표시용 작성자 이름
   created_at      timestamptz not null default now()
 );
+
+create index teams_board_id_idx on teams (board_id);
 
 -- 사용자 프로필 (닉네임) — 없으면 네이버 이름을 그대로 표시
 create table profiles (
@@ -171,3 +187,26 @@ create table block_rules (
 --   created_at      timestamptz not null default now(),
 --   constraint block_rule_valid_range check (start_min < end_min)
 -- );
+
+-- [마이그레이션] 공연별 팀 모집 게시판 — 위까지 실행했다면 아래만 실행:
+-- (기존 모집글은 "기존 모집글" 게시판으로 옮겨진다 — 이름은 /teams 게시판 관리에서 변경 가능.
+--  "사용금지" 관리용 팀은 게시판에 속하지 않는다)
+-- create table boards (
+--   id              uuid primary key default gen_random_uuid(),
+--   name            text not null,
+--   created_by      text,
+--   created_by_name text,
+--   created_at      timestamptz not null default now()
+-- );
+-- alter table teams add column board_id uuid references boards (id);
+-- create index teams_board_id_idx on teams (board_id);
+-- insert into boards (name) values ('기존 모집글');
+-- update teams set board_id = (select id from boards where name = '기존 모집글')
+--   where regexp_replace(name, '\s', '', 'g') not like '%사용금지%';
+
+-- [마이그레이션] 게시판 삭제 유예기간(24시간 되돌리기) — 위까지 실행했다면 아래만 실행:
+-- (글 있는 게시판도 삭제 가능해지고, 영구 삭제 시 글·댓글·예약이 함께 지워진다)
+-- alter table boards add column deleted_at timestamptz;
+-- alter table teams drop constraint teams_board_id_fkey;
+-- alter table teams add constraint teams_board_id_fkey
+--   foreign key (board_id) references boards (id) on delete cascade;
