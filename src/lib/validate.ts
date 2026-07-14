@@ -119,3 +119,33 @@ export function validateBlockRange(
   }
   return null;
 }
+
+/**
+ * 정기 사용 금지 규칙(요일 + 분 범위) 검증.
+ * 자정을 넘는 규칙(예: 22:00~02:00)은 요일이 갈려 요일별 두 규칙으로 등록해야 한다.
+ */
+export function validateBlockRule(
+  dayOfWeek: unknown,
+  startMin: unknown,
+  endMin: unknown
+): string | null {
+  if (
+    !Number.isInteger(dayOfWeek) ||
+    (dayOfWeek as number) < 0 ||
+    (dayOfWeek as number) > 6
+  ) {
+    return "요일이 올바르지 않습니다.";
+  }
+  if (!Number.isInteger(startMin) || !Number.isInteger(endMin)) {
+    return "시간 형식이 올바르지 않습니다.";
+  }
+  const s = startMin as number;
+  const e = endMin as number;
+  if (s < 0 || e > 1440) {
+    return "시간은 00:00~24:00 범위여야 합니다.";
+  }
+  if (s >= e) {
+    return "종료 시간은 시작 시간보다 뒤여야 합니다. (자정을 넘는 금지는 요일별로 나눠 등록해주세요)";
+  }
+  return null;
+}

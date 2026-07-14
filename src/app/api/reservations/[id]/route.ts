@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { validateBlockRange, validateRange } from "@/lib/validate";
 import { isAdminBlockTeam, isReservationCategory } from "@/lib/constants";
+import { findRuleConflict, ruleLabel } from "@/lib/block-rules";
 import { isExecutive } from "@/lib/roles";
 
 /** 조인된 팀 이름 꺼내기 — supabase 조인 결과는 배열일 수 있다 */
@@ -168,6 +169,32 @@ export async function PATCH(
   );
   if (rangeError) {
     return NextResponse.json({ error: rangeError }, { status: 400 });
+  }
+
+  // 정기 사용 금지 규칙과 겹치는 시간으로는 옮길 수 없다 (사용 금지 예약은 예외)
+  if (!newIsBlock) {
+    const { data: rules, error: rulesError } = await supabase
+      .from("block_rules")
+      .select("*");
+    // 42P01(테이블 없음 = 마이그레이션 전)만 규칙 없음으로 취급 — 그 외 조회
+    // 실패까지 통과시키면 일시 장애 때 금지 시간이 뚫린다
+    if (rulesError && rulesError.code !== "42P01") {
+      return NextResponse.json(
+        { error: "사용 금지 규칙 확인에 실패했습니다. 잠시 후 다시 시도해주세요." },
+        { status: 500 }
+      );
+    }
+    const conflict = findRuleConflict(rules ?? [], startsAt, endsAt);
+    if (conflict) {
+      return NextResponse.json(
+        {
+          error: `${ruleLabel(conflict)}은 사용 금지 시간입니다.${
+            conflict.note ? ` (${conflict.note})` : ""
+          }`,
+        },
+        { status: 409 }
+      );
+    }
   }
 
   const { data, error } = await supabase

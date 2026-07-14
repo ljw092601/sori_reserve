@@ -70,6 +70,24 @@ create table reservations (
 
 create index reservations_starts_at_idx on reservations (starts_at);
 
+-- 정기 사용 금지 규칙 (임원 전용) — "매주 X요일 HH:mm~HH:mm은 예약 불가"
+-- 예약 행을 미리 만들어두는 방식이 아니라 규칙만 저장하고,
+-- 시간표 표시와 예약 API 검증이 이 테이블을 참조한다. 규칙을 고치면 즉시 전체 반영.
+create table block_rules (
+  id              uuid primary key default gen_random_uuid(),
+  day_of_week     int not null check (day_of_week between 0 and 6),
+                  -- KST 기준 요일 (0=일 ~ 6=토)
+  start_min       int not null check (start_min between 0 and 1439),
+  end_min         int not null check (end_min between 1 and 1440),
+                  -- KST 자정부터의 분 (예: 18:00 = 1080)
+  note            text,
+  created_by      text not null,
+  created_by_name text not null,
+  created_at      timestamptz not null default now(),
+
+  constraint block_rule_valid_range check (start_min < end_min)
+);
+
 -- 팀 등록 예시:
 -- insert into teams (name, color) values
 --   ('1팀', '#ef4444'),
@@ -140,3 +158,16 @@ create index reservations_starts_at_idx on reservations (starts_at);
 
 -- [마이그레이션] 모집글 곡 링크(유튜브 등, 선택) — 위까지 실행했다면 아래만 실행:
 -- alter table teams add column song_url text;
+
+-- [마이그레이션] 정기 사용 금지 규칙 — 위까지 실행했다면 아래만 실행:
+-- create table block_rules (
+--   id              uuid primary key default gen_random_uuid(),
+--   day_of_week     int not null check (day_of_week between 0 and 6),
+--   start_min       int not null check (start_min between 0 and 1439),
+--   end_min         int not null check (end_min between 1 and 1440),
+--   note            text,
+--   created_by      text not null,
+--   created_by_name text not null,
+--   created_at      timestamptz not null default now(),
+--   constraint block_rule_valid_range check (start_min < end_min)
+-- );

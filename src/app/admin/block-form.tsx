@@ -2,14 +2,14 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { isAdminBlockTeam, RULES } from "@/lib/constants";
+import { isAdminBlockTeam } from "@/lib/constants";
 import { kstDateString, kstToIso } from "@/lib/dates";
 import type { Team } from "@/lib/types";
 
 /**
- * 사용 금지 시간 등록 폼 (임원 전용).
+ * 특정 날짜 사용 금지 등록 폼 (임원 전용).
  * "사용금지" 팀으로 예약을 만들어 해당 시간대를 통째로 막는다.
- * 일반 예약 폼과 달리 매주 반복 옵션이 기본 노출된다.
+ * (매주 반복되는 금지는 정기 사용 금지 규칙 섹션에서 관리한다)
  */
 export default function BlockForm() {
   const router = useRouter();
@@ -22,7 +22,6 @@ export default function BlockForm() {
   const [date, setDate] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
-  const [repeatWeeks, setRepeatWeeks] = useState(1);
 
   useEffect(() => {
     fetch("/api/teams")
@@ -53,7 +52,6 @@ export default function BlockForm() {
         startsAt: kstToIso(date, start),
         endsAt: kstToIso(date, end),
         note: form.get("note"),
-        repeatWeeks,
       }),
     });
 
@@ -81,9 +79,15 @@ export default function BlockForm() {
       onSubmit={handleSubmit}
       className="flex flex-col gap-4 rounded-2xl border border-[var(--border)] bg-white p-6 shadow-md"
     >
-      <h2 className="text-base font-bold text-[var(--foreground)]">
-        사용 금지 시간 등록
-      </h2>
+      <div>
+        <h2 className="text-base font-bold text-[var(--foreground)]">
+          특정 날짜 사용 금지
+        </h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          하루짜리 일정(대청소, 행사 등)으로 특정 시간대를 막아요. 매주
+          반복되는 금지는 위의 정기 사용 금지에서 등록해주세요.
+        </p>
+      </div>
 
       {/* 사용금지 팀이 여러 개일 때만 선택지를 보여준다 */}
       {blockTeams.length > 1 && (
@@ -137,31 +141,6 @@ export default function BlockForm() {
           />
         </label>
       </div>
-
-      <label className="flex flex-col gap-1 text-sm font-semibold">
-        매주 반복
-        <select
-          value={repeatWeeks}
-          onChange={(e) => setRepeatWeeks(Number(e.target.value))}
-          className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
-        >
-          <option value={1}>반복 안 함</option>
-          {Array.from(
-            { length: RULES.MAX_REPEAT_WEEKS - 1 },
-            (_, i) => i + 2
-          ).map((n) => (
-            <option key={n} value={n}>
-              {n}주 동안 (총 {n}회)
-            </option>
-          ))}
-        </select>
-        {repeatWeeks > 1 && (
-          <span className="text-xs font-normal text-zinc-500">
-            같은 요일·시간으로 {repeatWeeks}주간 등록돼요. 한 주라도 겹치면
-            전체가 등록되지 않아요.
-          </span>
-        )}
-      </label>
 
       <label className="flex flex-col gap-1 text-sm font-semibold">
         메모 (선택)
