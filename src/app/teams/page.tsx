@@ -1,7 +1,11 @@
 import Link from "next/link";
+import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { isExecutive } from "@/lib/roles";
+import { purgeExpiredBoards } from "@/lib/boards";
 import { TEAM_STATUS_LABEL, isAdminBlockTeam } from "@/lib/constants";
 import type { MemberEntry } from "@/lib/types";
+import BoardManager, { type BoardWithCount } from "./board-manager";
 
 export const dynamic = "force-dynamic";
 
@@ -24,14 +28,57 @@ function StatusBadge({ status }: { status: "recruiting" | "closed" }) {
   );
 }
 
-export default async function TeamsPage() {
+export default async function TeamsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ board?: string }>;
+}) {
+  const { board: boardParam } = await searchParams;
+  const session = await auth();
+  const exec = await isExecutive(session?.user?.id);
+
+  // 유예기간(24시간)이 지난 삭제 대기 게시판을 영구 삭제
+  await purgeExpiredBoards();
+
   const supabase = supabaseAdmin();
-  const { data, error } = await supabase
-    .from("teams")
-    .select(
-      "id, name, color, status, members, content, created_by_name, created_at, comments(count)"
-    )
+  const { data: boards, error: boardsError } = await supabase
+    .from("boards")
+    .select("id, name, created_at, deleted_at, teams(count)")
     .order("created_at", { ascending: false });
+
+  if (boardsError) {
+    return (
+      <p className="text-center text-sm text-zinc-500">
+        게시판을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
+      </p>
+    );
+  }
+
+  const withCount = (boards ?? []).map((b) => ({
+    id: b.id as string,
+    name: b.name as string,
+    deleted_at: (b.deleted_at ?? null) as string | null,
+    postCount:
+      (b.teams as unknown as { count: number }[])?.[0]?.count ?? 0,
+  }));
+  const boardList: BoardWithCount[] = withCount.filter((b) => !b.deleted_at);
+  // 삭제 대기 게시판 — 임원의 되돌리기 UI에만 쓰인다
+  const deletedBoards: BoardWithCount[] = withCount.filter(
+    (b) => b.deleted_at
+  );
+
+  // 주소의 게시판이 없으면(삭제 등) 가장 최근 게시판으로
+  const selected = boardList.find((b) => b.id === boardParam) ?? boardList[0];
+
+  const { data, error } = selected
+    ? await supabase
+        .from("teams")
+        .select(
+          "id, name, color, status, members, content, created_by_name, created_at, comments(count)"
+        )
+        .eq("board_id", selected.id)
+        .order("created_at", { ascending: false })
+    : { data: [], error: null };
 
   if (error) {
     return (
@@ -46,18 +93,54 @@ export default async function TeamsPage() {
   return (
     <div className="mx-auto w-full max-w-2xl">
       {/* 헤더 */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-[var(--foreground)]">팀 모집 게시판</h1>
-        <Link
-          href="/teams/new"
-          className="rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-md transition-all hover:opacity-90 hover:shadow-lg active:scale-95"
-          style={{ background: "var(--brand-gradient)" }}
-        >
-          모집글 쓰기
-        </Link>
+        {selected && (
+          <Link
+            href={`/teams/new?board=${selected.id}`}
+            className="rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-md transition-all hover:opacity-90 hover:shadow-lg active:scale-95"
+            style={{ background: "var(--brand-gradient)" }}
+          >
+            모집글 쓰기
+          </Link>
+        )}
       </div>
 
-      {posts.length === 0 ? (
+      {/* 공연별 게시판 탭 */}
+      {boardList.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {boardList.map((b) => (
+            <Link
+              key={b.id}
+              href={`/teams?board=${b.id}`}
+              className={
+                b.id === selected?.id
+                  ? "rounded-full px-4 py-1.5 text-sm font-semibold text-white shadow-md"
+                  : "rounded-full border border-[var(--border)] bg-white px-4 py-1.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-[var(--brand-mid)] hover:text-[var(--brand-text)]"
+              }
+              style={
+                b.id === selected?.id
+                  ? { background: "var(--brand-gradient)" }
+                  : undefined
+              }
+            >
+              {b.name}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* 게시판 만들기/이름 변경/삭제/되돌리기 — 임원에게만 보이고, API에서도 임원을 검증한다 */}
+      {exec && <BoardManager boards={boardList} deletedBoards={deletedBoards} />}
+
+      {boardList.length === 0 ? (
+        <div className="rounded-2xl border border-[var(--border)] bg-white p-10 text-center text-sm text-zinc-500 shadow-sm">
+          아직 게시판이 없어요.
+          {exec
+            ? " 위의 게시판 관리에서 공연 게시판을 만들어보세요!"
+            : " 임원이 공연 게시판을 만들면 모집글을 쓸 수 있어요."}
+        </div>
+      ) : posts.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-white p-10 text-center text-sm text-zinc-500 shadow-sm">
           아직 모집글이 없어요. 하고 싶은 곡으로 첫 팀원을 모아보세요!
         </div>

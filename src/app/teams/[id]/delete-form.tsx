@@ -6,9 +6,12 @@ import { useRouter } from "next/navigation";
 export default function DeleteForm({
   teamId,
   teamName,
+  backHref,
 }: {
   teamId: string;
   teamName: string;
+  /** 삭제 후 돌아갈 게시판 주소 */
+  backHref: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +30,7 @@ export default function DeleteForm({
 
     const res = await fetch(`/api/teams/${teamId}`, { method: "DELETE" });
     if (res.ok) {
-      router.push("/teams");
+      router.push(backHref);
       router.refresh();
       return;
     }

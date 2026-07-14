@@ -2,14 +2,21 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import type { MemberEntry } from "@/lib/types";
+import type { Board, MemberEntry } from "@/lib/types";
 import { MembersInput, StatusRadio } from "../form-fields";
 
-export default function TeamForm() {
+export default function TeamForm({
+  boards,
+  defaultBoardId,
+}: {
+  boards: Board[];
+  defaultBoardId: string;
+}) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [boardId, setBoardId] = useState(defaultBoardId);
   const [name, setName] = useState("");
   const [status, setStatus] = useState<"recruiting" | "closed">("recruiting");
   const [members, setMembers] = useState<MemberEntry[]>([
@@ -25,11 +32,11 @@ export default function TeamForm() {
     const res = await fetch("/api/teams", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, status, members, content }),
+      body: JSON.stringify({ board_id: boardId, name, status, members, content }),
     });
 
     if (res.ok) {
-      router.push("/teams");
+      router.push(`/teams?board=${boardId}`);
       router.refresh();
       return;
     }
@@ -43,6 +50,21 @@ export default function TeamForm() {
       <h1 className="mb-6 text-xl font-bold text-[var(--foreground)]">팀원 모집글 쓰기</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <label className="flex flex-col gap-1 text-sm font-semibold">
+          게시판 (공연)
+          <select
+            value={boardId}
+            onChange={(e) => setBoardId(e.target.value)}
+            className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
+          >
+            {boards.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <label className="flex flex-col gap-1 text-sm font-semibold">
           곡 제목
           <input
