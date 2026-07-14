@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { isAdminBlockTeam } from "@/lib/constants";
+import { isExecutive } from "@/lib/roles";
 import { parseMemberEntries, parseSongUrl } from "@/lib/validate";
 
 /** 팀(모집글) 조회 — { team } 또는 { fail: 에러 응답 } */
@@ -8,7 +10,7 @@ async function findTeam(id: string) {
   const supabase = supabaseAdmin();
   const { data: team, error } = await supabase
     .from("teams")
-    .select("id, created_by, boards(deleted_at)")
+    .select("id, name, board_id, created_by, boards(deleted_at)")
     .eq("id", id)
     .single();
 
@@ -35,7 +37,9 @@ async function findTeam(id: string) {
 }
 
 /**
- * PATCH /api/teams/[id] — 모집글 수정 (로그인한 누구나)
+ * PATCH /api/teams/[id] — 모집글 수정 (로그인한 누구나 — 팀원이 직접 이름을 넣는 협업 편집)
+ * 단, 관리용 팀(게시판 없음/"사용금지")과 이름의 "사용금지" 경계 변경은 임원 전용 —
+ * 예약 API가 팀 이름으로 임원 전용 여부를 판정하므로 이름 변경이 곧 권한 변경이다.
  * body: { name(곡 제목), status, members?: {session, name}[], content?, song_url? }
  * 전체 필드 교체 방식 — 생략한 선택 필드(content, song_url)는 null로 저장되므로
  * 호출자는 항상 모든 필드를 보내야 한다 (수정 폼이 그렇게 동작).
@@ -108,6 +112,24 @@ export async function PATCH(
     );
   }
 
+  const isManaged =
+    found.team.board_id === null || isAdminBlockTeam(found.team.name);
+  const crossesBlockBoundary =
+    isAdminBlockTeam(name) !== isAdminBlockTeam(found.team.name);
+  if (
+    (isManaged || crossesBlockBoundary) &&
+    !(await isExecutive(session.user.id))
+  ) {
+    return NextResponse.json(
+      {
+        error: isManaged
+          ? "사용금지 등 관리용 팀은 임원만 수정할 수 있습니다."
+          : "곡 제목의 '사용금지'는 임원만 넣거나 뺄 수 있습니다.",
+      },
+      { status: 403 }
+    );
+  }
+
   const supabase = supabaseAdmin();
   const { data, error } = await supabase
     .from("teams")
@@ -154,6 +176,17 @@ export async function DELETE(
   ) {
     return NextResponse.json(
       { error: "본인이 쓴 모집글만 삭제할 수 있습니다." },
+      { status: 403 }
+    );
+  }
+  // 관리용 팀은 금지 예약이 매달려 있어(cascade) 삭제 파급이 크다 — 임원만.
+  // 경계가 열려 있던 시절 부원이 만든 "사용금지" 팀이 남아 있어도 여기서 막힌다.
+  if (
+    (found.team.board_id === null || isAdminBlockTeam(found.team.name)) &&
+    !(await isExecutive(session.user.id))
+  ) {
+    return NextResponse.json(
+      { error: "사용금지 등 관리용 팀은 임원만 삭제할 수 있습니다." },
       { status: 403 }
     );
   }

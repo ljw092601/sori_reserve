@@ -37,10 +37,13 @@ create table teams (
 
 create index teams_board_id_idx on teams (board_id);
 
--- 사용자 프로필 (닉네임) — 없으면 네이버 이름을 그대로 표시
+-- 사용자 프로필 (닉네임·역할) — 닉네임이 없으면 네이버 이름을 그대로 표시
 create table profiles (
   id         text primary key,     -- 네이버 사용자 고유 ID
   nickname   text not null,
+  role       text check (role in ('exec', 'member')),
+                                   -- 'exec'=임원, 그 외(null 포함)=부원 (src/lib/roles.ts)
+                                   -- 임원 승급/강등은 /admin 부원 관리에서
   updated_at timestamptz not null default now()
 );
 
@@ -171,6 +174,11 @@ create table block_rules (
 -- [마이그레이션] 기타(etc) 예약 제목 — 위까지 실행했다면 아래만 실행:
 -- (제목 없는 기존 기타 예약은 화면에서 예약자 이름으로 표시된다)
 -- alter table reservations add column title text;
+
+-- [마이그레이션] 임원 역할(/admin 부원 관리) — 위까지 실행했다면 아래만 실행:
+-- (role이 null인 사용자는 부원으로 취급. 첫 임원은 SQL로 직접 지정:
+--  update profiles set role = 'exec' where id = '<네이버 ID>';)
+-- alter table profiles add column role text check (role in ('exec', 'member'));
 
 -- [마이그레이션] 모집글 곡 링크(유튜브 등, 선택) — 위까지 실행했다면 아래만 실행:
 -- alter table teams add column song_url text;

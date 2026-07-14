@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { TEAM_COLORS } from "@/lib/constants";
+import { TEAM_COLORS, isAdminBlockTeam } from "@/lib/constants";
+import { isExecutive } from "@/lib/roles";
 import { parseMemberEntries, parseSongUrl } from "@/lib/validate";
 import { displayName } from "@/lib/profile";
 
@@ -81,6 +82,14 @@ export async function POST(req: NextRequest) {
   if (name.length > 50) {
     return NextResponse.json(
       { error: "곡 제목은 50자 이내로 입력해주세요." },
+      { status: 400 }
+    );
+  }
+  // "사용금지"가 들어간 이름은 예약 API가 임원 전용 관리 팀으로 취급하므로
+  // 일반 부원이 쓰면 본인도 예약·수정 못 하는 잠긴 글이 된다
+  if (isAdminBlockTeam(name) && !(await isExecutive(session.user.id))) {
+    return NextResponse.json(
+      { error: "곡 제목에 '사용금지'는 사용할 수 없습니다." },
       { status: 400 }
     );
   }
