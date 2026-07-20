@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 발표 슬라이드 원본 (실명 미블러 스크린샷 포함 - 공개 금지, 배포본은 docs/)
+/slides
