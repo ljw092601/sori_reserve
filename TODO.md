@@ -126,7 +126,7 @@
 행 번호는 리뷰 시점 기준이므로 코드가 바뀌면 어긋날 수 있음.
 (2026-07-22 확인: 리뷰 이후 코드 변경은 발표 슬라이드 배포뿐이라 아래 미완 항목은 전부 여전히 유효.)
 
-## 완료된 항목 (2026-07-14)
+## 완료된 항목
 
 - [x] **[심각] 팀 모집글 PATCH 소유권/경계 검사 부재** — 커밋 3869cb5.
       관리용 팀(board_id null 또는 "사용금지" 이름)과 이름의 사용금지 경계 변경은
@@ -135,15 +135,13 @@
       컬럼 + check 제약 + 마이그레이션 주석 추가. 운영 DB는 이미 수동 반영돼 있어 실행할 것 없음.
 - [x] 문서 정리(일부): PLAN.md의 낡은 서술(반복 예약 구현됨, 관리자 페이지 후순위 등)을
       현행화해서 이 파일 1부로 흡수, PLAN.md 삭제 (2026-07-22).
+- [x] **[중요] RLS 활성화** — 2026-07-22 완료. schema.sql에 6개 테이블
+      `enable row level security` + 하단 마이그레이션 블록 추가, 운영 DB에도 실행함.
+      정책 없이 켜서 anon 키에 deny-all, service role은 RLS 우회라 앱 코드 변경 없음.
+      참고: 운영 DB 스키마 변경(DDL)은 이제 Supabase 대시보드 SQL Editor 외에
+      Supabase MCP(`execute_sql`/`apply_migration`, user 스코프 등록됨)로도 가능.
 
 ## 중요 (다음 작업 우선순위)
-
-- [ ] **RLS 활성화 (6줄)** — `supabase/schema.sql`
-      코드는 service key만 쓰지만 Supabase의 anon 키 + Data API가 기본 활성이라,
-      RLS 없는 public 테이블은 anon 키 유출 시 전체가 읽기/쓰기로 열린다.
-      정책은 만들 필요 없이 테이블당 한 줄이면 deny-all (service role은 RLS 우회하므로 코드 수정 불필요):
-      `alter table boards enable row level security;` — teams, profiles, comments, reservations, block_rules 동일.
-      운영 DB에도 같은 SQL 실행 필요.
 
 - [ ] **500 응답의 DB 에러 원문 노출 제거** — 대부분의 API 라우트
       `{ error: error.message }`가 Postgres 원문(테이블·컬럼·제약명)을 그대로 반환.
