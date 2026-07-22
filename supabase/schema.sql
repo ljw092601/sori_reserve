@@ -107,6 +107,16 @@ create table block_rules (
   constraint block_rule_valid_range check (start_min < end_min)
 );
 
+-- RLS 활성화 (deny-all) — 정책을 만들지 않으므로 anon/authenticated 키로는 접근 불가.
+-- 앱은 서버 전용 service role 키만 쓰고 service role은 RLS를 우회하므로 동작에 영향 없음.
+-- anon 키 + Data API가 기본 활성인 Supabase에서 키 유출 시 노출을 막는 안전장치.
+alter table boards enable row level security;
+alter table teams enable row level security;
+alter table profiles enable row level security;
+alter table comments enable row level security;
+alter table reservations enable row level security;
+alter table block_rules enable row level security;
+
 -- 팀 등록 예시:
 -- insert into teams (name, color) values
 --   ('1팀', '#ef4444'),
@@ -218,3 +228,12 @@ create table block_rules (
 -- alter table teams drop constraint teams_board_id_fkey;
 -- alter table teams add constraint teams_board_id_fkey
 --   foreign key (board_id) references boards (id) on delete cascade;
+
+-- [마이그레이션] RLS 활성화 (deny-all) — 위까지 실행했다면 아래만 실행:
+-- (운영 DB에는 2026-07-22 기준 이미 적용돼 있음 — 6개 테이블 rowsecurity=true, 정책 0개 확인)
+-- alter table boards enable row level security;
+-- alter table teams enable row level security;
+-- alter table profiles enable row level security;
+-- alter table comments enable row level security;
+-- alter table reservations enable row level security;
+-- alter table block_rules enable row level security;

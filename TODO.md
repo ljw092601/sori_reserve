@@ -135,15 +135,11 @@
       컬럼 + check 제약 + 마이그레이션 주석 추가. 운영 DB는 이미 수동 반영돼 있어 실행할 것 없음.
 - [x] 문서 정리(일부): PLAN.md의 낡은 서술(반복 예약 구현됨, 관리자 페이지 후순위 등)을
       현행화해서 이 파일 1부로 흡수, PLAN.md 삭제 (2026-07-22).
+- [x] **RLS 활성화** — 운영 DB에는 이미 적용돼 있던 것으로 확인 (2026-07-22:
+      6개 테이블 전부 rowsecurity=true, 정책 0개 = deny-all). schema.sql에만 누락돼 있어
+      본 스키마 + 마이그레이션 주석으로 동기화 완료.
 
 ## 중요 (다음 작업 우선순위)
-
-- [ ] **RLS 활성화 (6줄)** — `supabase/schema.sql`
-      코드는 service key만 쓰지만 Supabase의 anon 키 + Data API가 기본 활성이라,
-      RLS 없는 public 테이블은 anon 키 유출 시 전체가 읽기/쓰기로 열린다.
-      정책은 만들 필요 없이 테이블당 한 줄이면 deny-all (service role은 RLS 우회하므로 코드 수정 불필요):
-      `alter table boards enable row level security;` — teams, profiles, comments, reservations, block_rules 동일.
-      운영 DB에도 같은 SQL 실행 필요.
 
 - [ ] **500 응답의 DB 에러 원문 노출 제거** — 대부분의 API 라우트
       `{ error: error.message }`가 Postgres 원문(테이블·컬럼·제약명)을 그대로 반환.
