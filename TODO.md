@@ -137,10 +137,13 @@
       컬럼 + check 제약 + 마이그레이션 주석 추가. 운영 DB는 이미 수동 반영돼 있어 실행할 것 없음.
 - [x] 문서 정리(일부): PLAN.md의 낡은 서술(반복 예약 구현됨, 관리자 페이지 후순위 등)을
       현행화해서 이 파일 1부로 흡수, PLAN.md 삭제 (2026-07-22).
-- [x] **RLS 활성화** — 커밋 faddb9a (2026-07-22). 운영 DB에는 이미 적용돼 있던 것으로 확인
-      (6개 테이블 전부 rowsecurity=true, 정책 0개 = deny-all). schema.sql에만 누락돼 있어
-      본 스키마 + 마이그레이션 주석으로 동기화 완료. 재발 방지로 AGENTS.md에
-      "schema.sql 먼저" 스키마 변경 절차 규칙 추가.
+- [x] **RLS 활성화** — 2026-07-22 완료 (두 세션이 병렬 작업: main 커밋 40707dc가 운영 DB 실행 +
+      schema.sql 반영, 이 브랜치 faddb9a는 독립적으로 동일 내용 동기화 — 병합 시 하나로 정리).
+      6개 테이블 `enable row level security`, 정책 0개 = anon 키 deny-all,
+      service role은 RLS 우회라 앱 코드 변경 없음.
+      재발 방지로 AGENTS.md에 "schema.sql 먼저" 스키마 변경 절차 규칙 추가.
+      참고: 운영 DB 스키마 변경(DDL)은 이제 Supabase 대시보드 SQL Editor 외에
+      Supabase MCP(`execute_sql`/`apply_migration`, user 스코프 등록됨)로도 가능.
 - [x] **500 응답의 DB 에러 원문 노출 제거** — 커밋 4cdc477 (2026-07-22). 공용 헬퍼 `src/lib/api-error.ts`의
       `dbErrorResponse(context, error)`로 통일: 원문은 `console.error`로 서버에만, 클라이언트엔
       일반 메시지. 리뷰 목록의 21곳 + 추가 발견 3곳(`boardError`/`teamError`/`countError` —
