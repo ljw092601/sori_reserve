@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 import { isExecutive } from "@/lib/roles";
 import { validateBlockRule } from "@/lib/validate";
 
@@ -75,7 +76,7 @@ export async function PATCH(
         { status: 404 }
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("PATCH /api/admin/block-rules/[id]", error);
   }
   if (!data) {
     return NextResponse.json(
@@ -104,7 +105,7 @@ export async function DELETE(
     .eq("id", id);
 
   if (error && error.code !== "22P02") {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("DELETE /api/admin/block-rules/[id]", error);
   }
   return NextResponse.json({ ok: true });
 }

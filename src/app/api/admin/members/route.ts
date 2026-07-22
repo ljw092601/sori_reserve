@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 import { isExecutive, type Role } from "@/lib/roles";
 import { DEV_ACCOUNTS } from "@/lib/dev-accounts";
 
@@ -43,7 +44,7 @@ export async function GET() {
   } else {
     const noRole = await supabase.from("profiles").select("id, nickname");
     if (noRole.error) {
-      return NextResponse.json({ error: noRole.error.message }, { status: 500 });
+      return dbErrorResponse("GET /api/admin/members", noRole.error);
     }
     rows = noRole.data;
   }
@@ -144,10 +145,7 @@ export async function PATCH(req: NextRequest) {
       .eq("role", "exec")
       .neq("id", userId);
     if (countError) {
-      return NextResponse.json(
-        { error: countError.message },
-        { status: 500 }
-      );
+      return dbErrorResponse("PATCH /api/admin/members", countError);
     }
     if (!count) {
       return NextResponse.json(
@@ -176,7 +174,7 @@ export async function PATCH(req: NextRequest) {
         { status: 500 }
       );
     }
-    return NextResponse.json({ error: updated.error.message }, { status: 500 });
+    return dbErrorResponse("PATCH /api/admin/members", updated.error);
   }
 
   if (updated.data.length === 0) {
@@ -188,10 +186,7 @@ export async function PATCH(req: NextRequest) {
       updated_at: new Date().toISOString(),
     });
     if (inserted.error) {
-      return NextResponse.json(
-        { error: inserted.error.message },
-        { status: 500 }
-      );
+      return dbErrorResponse("PATCH /api/admin/members", inserted.error);
     }
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 
 /**
  * PATCH /api/profile — 닉네임 변경 (네이버 로그인 필요)
@@ -46,7 +47,7 @@ export async function PATCH(req: NextRequest) {
     updated_at: new Date().toISOString(),
   });
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("PATCH /api/profile", error);
   }
 
   // 기존 글/예약/댓글의 표시 이름도 새 닉네임으로 통일

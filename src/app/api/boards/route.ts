@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 import { isExecutive } from "@/lib/roles";
 import { displayName } from "@/lib/profile";
 
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("POST /api/boards", error);
   }
   return NextResponse.json({ board: data }, { status: 201 });
 }

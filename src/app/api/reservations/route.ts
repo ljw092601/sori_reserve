@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 import { validateBlockRange, validateRange } from "@/lib/validate";
 import {
   isAdminBlockTeam,
@@ -21,15 +22,28 @@ const RESERVATION_SELECT =
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
+  // from/to는 파싱 가능한 날짜만 허용 — 이상한 값을 DB까지 보내면 500이 나므로 400으로 끊는다
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
+  if (
+    (fromParam !== null && Number.isNaN(Date.parse(fromParam))) ||
+    (toParam !== null && Number.isNaN(Date.parse(toParam)))
+  ) {
+    return NextResponse.json(
+      { error: "from/to는 올바른 날짜 형식이어야 합니다." },
+      { status: 400 }
+    );
+  }
   // 기본값은 KST 기준 오늘 자정부터 — UTC 날짜를 쓰면 KST 00~09시에 하루가 밀린다
   const todayStartMs = dayStartEpoch(kstDateString(new Date()));
-  const from =
-    searchParams.get("from") ?? new Date(todayStartMs).toISOString();
-  const to =
-    searchParams.get("to") ??
-    new Date(
-      todayStartMs + (RULES.MAX_DAYS_AHEAD + 1) * 86_400_000
-    ).toISOString();
+  const from = fromParam
+    ? new Date(Date.parse(fromParam)).toISOString()
+    : new Date(todayStartMs).toISOString();
+  const to = toParam
+    ? new Date(Date.parse(toParam)).toISOString()
+    : new Date(
+        todayStartMs + (RULES.MAX_DAYS_AHEAD + 1) * 86_400_000
+      ).toISOString();
 
   const supabase = supabaseAdmin();
   const { data, error } = await supabase
@@ -40,7 +54,7 @@ export async function GET(req: NextRequest) {
     .order("starts_at");
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("GET /api/reservations", error);
   }
   return NextResponse.json({ reservations: data });
 }
@@ -233,7 +247,7 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("POST /api/reservations", error);
   }
   return NextResponse.json(
     { reservations: data, count: data?.length ?? 0 },

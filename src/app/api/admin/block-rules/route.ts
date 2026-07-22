@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 import { isExecutive } from "@/lib/roles";
 import { displayName } from "@/lib/profile";
 import { validateBlockRule } from "@/lib/validate";
@@ -10,15 +11,15 @@ const RULE_SELECT =
 
 /** 42P01: block_rules 테이블이 아직 없음 — 마이그레이션 안내로 바꿔준다 */
 const ruleTableError = (error: { code?: string; message: string }) =>
-  NextResponse.json(
-    {
-      error:
-        error.code === "42P01"
-          ? "block_rules 테이블이 없습니다. Supabase에서 마이그레이션을 먼저 실행해주세요."
-          : error.message,
-    },
-    { status: 500 }
-  );
+  error.code === "42P01"
+    ? NextResponse.json(
+        {
+          error:
+            "block_rules 테이블이 없습니다. Supabase에서 마이그레이션을 먼저 실행해주세요.",
+        },
+        { status: 500 }
+      )
+    : dbErrorResponse("api/admin/block-rules", error);
 
 /**
  * GET /api/admin/block-rules — 정기 사용 금지 규칙 목록 (임원 전용)

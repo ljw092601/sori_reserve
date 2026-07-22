@@ -138,17 +138,15 @@
 - [x] **RLS 활성화** — 운영 DB에는 이미 적용돼 있던 것으로 확인 (2026-07-22:
       6개 테이블 전부 rowsecurity=true, 정책 0개 = deny-all). schema.sql에만 누락돼 있어
       본 스키마 + 마이그레이션 주석으로 동기화 완료.
+- [x] **500 응답의 DB 에러 원문 노출 제거** (2026-07-22) — 공용 헬퍼 `src/lib/api-error.ts`의
+      `dbErrorResponse(context, error)`로 통일: 원문은 `console.error`로 서버에만, 클라이언트엔
+      일반 메시지. 리뷰 목록의 21곳 + 추가 발견 3곳(`boardError`/`teamError`/`countError` —
+      접두사 붙은 에러 변수라 리뷰 grep에서 누락) 총 24곳 교체.
+      함께: `GET /api/reservations`의 `from`/`to` 검증 추가 — 파싱 불가 값은 400, 유효 값은
+      `toISOString()`으로 정규화 후 쿼리. 서버 컴포넌트의 `throw new Error(error.message)`
+      2곳(page.tsx, reserve/page.tsx)은 Next.js가 프로덕션에서 마스킹하므로 비노출 확인.
 
 ## 중요 (다음 작업 우선순위)
-
-- [ ] **500 응답의 DB 에러 원문 노출 제거** — 대부분의 API 라우트
-      `{ error: error.message }`가 Postgres 원문(테이블·컬럼·제약명)을 그대로 반환.
-      비로그인 공개 엔드포인트 `GET /api/reservations`도 `?from=아무거나`로 노출됨.
-      → `console.error`로 서버에만 남기고 일반 메시지를 반환하는 공용 헬퍼로 통일.
-      대상: `api/reservations/route.ts:43,236`, `api/reservations/[id]/route.ts:230,307`,
-      `api/teams/route.ts`, `api/teams/[id]/route.ts`, `api/teams/[id]/comments/route.ts`,
-      `api/comments/[id]/route.ts`, `api/profile/route.ts`, `api/admin/members/route.ts`, `api/boards/route.ts` 등.
-      함께: `GET /api/reservations`의 `from`/`to` 무검증 — 잘못된 값은 500이 아니라 400 반환.
 
 - [ ] **클라이언트 폼 13곳 fetch에 try/catch 없음** — 네트워크 오류 시 unhandled rejection +
       `setSubmitting(false)` 미도달로 제출 버튼이 새로고침 전까지 영구 비활성.

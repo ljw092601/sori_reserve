@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 import { isAdminBlockTeam } from "@/lib/constants";
 import { isExecutive } from "@/lib/roles";
 import { parseMemberEntries, parseSongUrl } from "@/lib/validate";
@@ -145,7 +146,7 @@ export async function PATCH(
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("PATCH /api/teams/[id]", error);
   }
   return NextResponse.json({ team: data });
 }
@@ -194,7 +195,7 @@ export async function DELETE(
   const supabase = supabaseAdmin();
   const { error } = await supabase.from("teams").delete().eq("id", id);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("DELETE /api/teams/[id]", error);
   }
   return NextResponse.json({ ok: true });
 }

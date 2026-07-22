@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 import { displayName } from "@/lib/profile";
 
 /**
@@ -52,7 +53,7 @@ export async function POST(
     .eq("id", id)
     .maybeSingle();
   if (teamError && teamError.code !== "22P02") {
-    return NextResponse.json({ error: teamError.message }, { status: 500 });
+    return dbErrorResponse("POST /api/teams/[id]/comments", teamError);
   }
   if (
     (team?.boards as unknown as { deleted_at: string | null } | null)
@@ -86,7 +87,7 @@ export async function POST(
         { status: 404 }
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("POST /api/teams/[id]/comments", error);
   }
   return NextResponse.json({ comment: data }, { status: 201 });
 }

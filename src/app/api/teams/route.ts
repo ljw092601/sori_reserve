@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 import { TEAM_COLORS, isAdminBlockTeam } from "@/lib/constants";
 import { isExecutive } from "@/lib/roles";
 import { parseMemberEntries, parseSongUrl } from "@/lib/validate";
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("GET /api/teams", error);
   }
   // 게시판 없는 팀(사용금지 등 관리용)은 boards가 null이라 그대로 통과한다
   const teams = (data ?? [])
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
     .eq("id", boardId)
     .maybeSingle();
   if (boardError && boardError.code !== "22P02") {
-    return NextResponse.json({ error: boardError.message }, { status: 500 });
+    return dbErrorResponse("POST /api/teams", boardError);
   }
   if (!board || board.deleted_at) {
     return NextResponse.json(
@@ -169,7 +170,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("POST /api/teams", error);
   }
   return NextResponse.json({ team: data }, { status: 201 });
 }

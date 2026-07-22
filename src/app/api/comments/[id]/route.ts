@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 
 /** DELETE /api/comments/[id] — 댓글 삭제 (작성자 본인만) */
 export async function DELETE(
@@ -50,7 +51,7 @@ export async function DELETE(
 
   const { error } = await supabase.from("comments").delete().eq("id", id);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("DELETE /api/comments/[id]", error);
   }
   return NextResponse.json({ ok: true });
 }

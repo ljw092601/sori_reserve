@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 import { isExecutive } from "@/lib/roles";
 
 /** 임원 확인 — 통과하면 null, 아니면 에러 응답 반환 */
@@ -105,7 +106,7 @@ export async function PATCH(
         { status: 404 }
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("PATCH /api/boards/[id]", error);
   }
   return NextResponse.json({ board: data });
 }
@@ -139,7 +140,7 @@ export async function DELETE(
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("DELETE /api/boards/[id]", error);
   }
   return NextResponse.json({ ok: true });
 }

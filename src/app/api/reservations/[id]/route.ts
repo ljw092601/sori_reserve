@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dbErrorResponse } from "@/lib/api-error";
 import { validateBlockRange, validateRange } from "@/lib/validate";
 import { isAdminBlockTeam, isReservationCategory } from "@/lib/constants";
 import { findRuleConflict, ruleLabel } from "@/lib/block-rules";
@@ -227,7 +228,7 @@ export async function PATCH(
         { status: 404 }
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("PATCH /api/reservations/[id]", error);
   }
   return NextResponse.json({ reservation: data });
 }
@@ -304,7 +305,7 @@ export async function DELETE(
 
   const { error } = await query;
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return dbErrorResponse("DELETE /api/reservations/[id]", error);
   }
   return NextResponse.json({ ok: true });
 }
