@@ -62,22 +62,26 @@ export default function BlockRulesSection() {
       endMin: hhmmToMin(draft.end),
       note: draft.note,
     };
-    const res = await fetch(
-      editingId ? `/api/admin/block-rules/${editingId}` : "/api/admin/block-rules",
-      {
-        method: editingId ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
+    try {
+      const res = await fetch(
+        editingId ? `/api/admin/block-rules/${editingId}` : "/api/admin/block-rules",
+        {
+          method: editingId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
-    if (res.ok) {
-      setDraft(EMPTY_DRAFT);
-      setEditingId(null);
-      refresh();
-    } else {
-      const data = await res.json().catch(() => null);
-      setError(data?.error ?? "저장에 실패했습니다.");
+      if (res.ok) {
+        setDraft(EMPTY_DRAFT);
+        setEditingId(null);
+        refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "저장에 실패했습니다.");
+      }
+    } catch {
+      setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
     setBusy(false);
   }
@@ -103,18 +107,22 @@ export default function BlockRulesSection() {
     }
     setError(null);
     setBusy(true);
-    const res = await fetch(`/api/admin/block-rules/${rule.id}`, {
-      method: "DELETE",
-    });
-    if (res.ok) {
-      if (editingId === rule.id) {
-        setEditingId(null);
-        setDraft(EMPTY_DRAFT);
+    try {
+      const res = await fetch(`/api/admin/block-rules/${rule.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        if (editingId === rule.id) {
+          setEditingId(null);
+          setDraft(EMPTY_DRAFT);
+        }
+        refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "삭제에 실패했습니다.");
       }
-      refresh();
-    } else {
-      const data = await res.json().catch(() => null);
-      setError(data?.error ?? "삭제에 실패했습니다.");
+    } catch {
+      setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
     setBusy(false);
   }

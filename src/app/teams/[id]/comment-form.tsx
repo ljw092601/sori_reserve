@@ -14,20 +14,23 @@ export default function CommentForm({ teamId }: { teamId: string }) {
     setError(null);
     setSubmitting(true);
 
-    const res = await fetch(`/api/teams/${teamId}/comments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
-    });
+    try {
+      const res = await fetch(`/api/teams/${teamId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
 
-    if (res.ok) {
-      setContent("");
-      setSubmitting(false);
-      router.refresh();
-      return;
+      if (res.ok) {
+        setContent("");
+        router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "댓글 등록에 실패했습니다.");
+      }
+    } catch {
+      setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
-    const data = await res.json().catch(() => null);
-    setError(data?.error ?? "댓글 등록에 실패했습니다.");
     setSubmitting(false);
   }
 

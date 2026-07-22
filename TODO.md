@@ -145,16 +145,13 @@
       함께: `GET /api/reservations`의 `from`/`to` 검증 추가 — 파싱 불가 값은 400, 유효 값은
       `toISOString()`으로 정규화 후 쿼리. 서버 컴포넌트의 `throw new Error(error.message)`
       2곳(page.tsx, reserve/page.tsx)은 Next.js가 프로덕션에서 마스킹하므로 비노출 확인.
+- [x] **클라이언트 폼 fetch에 try/catch 없음** (2026-07-22) — 제출 핸들러 17곳(13개 파일)에
+      try/catch 적용, 네트워크 오류 시 "네트워크 오류가 발생했습니다..." 표시 후 버튼 복구.
+      성공 시 페이지 이동하는 폼은 이동 완료까지 버튼 비활성 유지(중복 제출 방지) — finally 대신
+      catch 뒤 `setSubmitting(false)` + 성공 경로 early return 패턴.
+      useEffect 목록 로딩 fetch 4곳은 이미 `.catch()`가 있어 제외.
 
 ## 중요 (다음 작업 우선순위)
-
-- [ ] **클라이언트 폼 13곳 fetch에 try/catch 없음** — 네트워크 오류 시 unhandled rejection +
-      `setSubmitting(false)` 미도달로 제출 버튼이 새로고침 전까지 영구 비활성.
-      → `try { ... } catch { setError("네트워크 오류...") } finally { setSubmitting(false) }` 일괄 적용.
-      대상: `reserve/reserve-form.tsx`, `reservations/[id]/edit/edit-form.tsx`, `reservations/[id]/cancel-form.tsx`,
-      `teams/new/team-form.tsx`, `teams/[id]/edit/edit-form.tsx`, `teams/[id]/comment-form.tsx`,
-      `teams/[id]/delete-form.tsx`, `teams/[id]/comment-delete-button.tsx`, `teams/board-manager.tsx`(4곳),
-      `admin/block-form.tsx`, `admin/block-rules-section.tsx`(2곳), `admin/members-section.tsx`, `account/account-form.tsx`.
 
 - [ ] **길이 제한 없는 텍스트 필드 3종** — 수 MB도 저장 가능 (다른 필드는 전부 제한 있음)
       - 예약 메모 `note`: `api/reservations/route.ts:215`, `api/reservations/[id]/route.ts:210` → 200자 제안

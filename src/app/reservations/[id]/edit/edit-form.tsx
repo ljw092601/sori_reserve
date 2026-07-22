@@ -80,28 +80,33 @@ export default function EditForm({
     }
     setSubmitting(true);
 
-    const res = await fetch(`/api/reservations/${reservationId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        category,
-        // 합주가 아니면 이전에 골랐던 팀이 남아 있어도 보내지 않는다
-        teamId: category === "ensemble" ? teamId : undefined,
-        // 제목은 기타에서만 입력받는다 — 합주는 팀명, 개인연습은 예약자 이름이 제목
-        title: category === "etc" ? title : undefined,
-        startsAt: kstToIso(date, start),
-        endsAt: kstToIso(date, end),
-        note,
-      }),
-    });
+    try {
+      const res = await fetch(`/api/reservations/${reservationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category,
+          // 합주가 아니면 이전에 골랐던 팀이 남아 있어도 보내지 않는다
+          teamId: category === "ensemble" ? teamId : undefined,
+          // 제목은 기타에서만 입력받는다 — 합주는 팀명, 개인연습은 예약자 이름이 제목
+          title: category === "etc" ? title : undefined,
+          startsAt: kstToIso(date, start),
+          endsAt: kstToIso(date, end),
+          note,
+        }),
+      });
 
-    if (res.ok) {
-      router.push("/");
-      router.refresh();
-      return;
+      if (res.ok) {
+        // 이동할 때까지 버튼은 비활성으로 둔다 (중복 제출 방지)
+        router.push("/");
+        router.refresh();
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      setError(data?.error ?? "수정에 실패했습니다.");
+    } catch {
+      setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
-    const data = await res.json().catch(() => null);
-    setError(data?.error ?? "수정에 실패했습니다.");
     setSubmitting(false);
   }
 

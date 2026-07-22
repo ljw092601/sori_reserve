@@ -15,15 +15,19 @@ export default function CommentDeleteButton({
     if (!confirm("댓글을 삭제할까요?")) return;
     setDeleting(true);
 
-    const res = await fetch(`/api/comments/${commentId}`, {
-      method: "DELETE",
-    });
-    if (res.ok) {
-      router.refresh();
-      return;
+    try {
+      const res = await fetch(`/api/comments/${commentId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        router.refresh();
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      alert(data?.error ?? "삭제에 실패했습니다.");
+    } catch {
+      alert("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
-    const data = await res.json().catch(() => null);
-    alert(data?.error ?? "삭제에 실패했습니다.");
     setDeleting(false);
   }
 

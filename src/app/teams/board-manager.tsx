@@ -46,16 +46,20 @@ function BoardRow({
   async function rename() {
     onError(null);
     setBusy(true);
-    const res = await fetch(`/api/boards/${board.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    if (res.ok) {
-      router.refresh();
-    } else {
-      const data = await res.json().catch(() => null);
-      onError(data?.error ?? "게시판 이름 변경에 실패했습니다.");
+    try {
+      const res = await fetch(`/api/boards/${board.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        onError(data?.error ?? "게시판 이름 변경에 실패했습니다.");
+      }
+    } catch {
+      onError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
     setBusy(false);
   }
@@ -76,12 +80,16 @@ function BoardRow({
     }
     onError(null);
     setBusy(true);
-    const res = await fetch(`/api/boards/${board.id}`, { method: "DELETE" });
-    if (res.ok) {
-      router.refresh();
-    } else {
-      const data = await res.json().catch(() => null);
-      onError(data?.error ?? "게시판 삭제에 실패했습니다.");
+    try {
+      const res = await fetch(`/api/boards/${board.id}`, { method: "DELETE" });
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        onError(data?.error ?? "게시판 삭제에 실패했습니다.");
+      }
+    } catch {
+      onError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
     setBusy(false);
   }
@@ -129,16 +137,20 @@ function DeletedBoardRow({
   async function restore() {
     onError(null);
     setBusy(true);
-    const res = await fetch(`/api/boards/${board.id}/restore`, {
-      method: "POST",
-    });
-    if (res.ok) {
-      router.refresh();
-    } else {
-      const data = await res.json().catch(() => null);
-      onError(data?.error ?? "게시판 되돌리기에 실패했습니다.");
-      // 유예기간 만료 등으로 목록이 달라졌을 수 있으니 새로 그린다
-      router.refresh();
+    try {
+      const res = await fetch(`/api/boards/${board.id}/restore`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        onError(data?.error ?? "게시판 되돌리기에 실패했습니다.");
+        // 유예기간 만료 등으로 목록이 달라졌을 수 있으니 새로 그린다
+        router.refresh();
+      }
+    } catch {
+      onError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
     setBusy(false);
   }
@@ -190,23 +202,27 @@ export default function BoardManager({
     setError(null);
     setBusy(true);
 
-    const res = await fetch("/api/boards", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName }),
-    });
+    try {
+      const res = await fetch("/api/boards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName }),
+      });
 
-    if (res.ok) {
-      const data = await res.json().catch(() => null);
-      setNewName("");
-      // 새로 만든 게시판을 바로 보여준다
-      router.push(
-        data?.board?.id ? `/teams?board=${data.board.id}` : "/teams"
-      );
-      router.refresh();
-    } else {
-      const data = await res.json().catch(() => null);
-      setError(data?.error ?? "게시판 만들기에 실패했습니다.");
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        setNewName("");
+        // 새로 만든 게시판을 바로 보여준다
+        router.push(
+          data?.board?.id ? `/teams?board=${data.board.id}` : "/teams"
+        );
+        router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "게시판 만들기에 실패했습니다.");
+      }
+    } catch {
+      setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
     setBusy(false);
   }

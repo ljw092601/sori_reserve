@@ -31,16 +31,20 @@ export default function MembersSection() {
     const next = member.role === "exec" ? "member" : "exec";
     setError(null);
     setBusyId(member.id);
-    const res = await fetch("/api/admin/members", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: member.id, role: next }),
-    });
-    if (res.ok) {
-      load();
-    } else {
-      const data = await res.json().catch(() => null);
-      setError(data?.error ?? "역할 변경에 실패했습니다.");
+    try {
+      const res = await fetch("/api/admin/members", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: member.id, role: next }),
+      });
+      if (res.ok) {
+        load();
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "역할 변경에 실패했습니다.");
+      }
+    } catch {
+      setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
     setBusyId(null);
   }

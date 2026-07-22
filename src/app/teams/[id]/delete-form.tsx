@@ -28,14 +28,19 @@ export default function DeleteForm({
     setError(null);
     setDeleting(true);
 
-    const res = await fetch(`/api/teams/${teamId}`, { method: "DELETE" });
-    if (res.ok) {
-      router.push(backHref);
-      router.refresh();
-      return;
+    try {
+      const res = await fetch(`/api/teams/${teamId}`, { method: "DELETE" });
+      if (res.ok) {
+        // 이동할 때까지 버튼은 비활성으로 둔다 (중복 요청 방지)
+        router.push(backHref);
+        router.refresh();
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      setError(data?.error ?? "삭제에 실패했습니다.");
+    } catch {
+      setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
-    const data = await res.json().catch(() => null);
-    setError(data?.error ?? "삭제에 실패했습니다.");
     setDeleting(false);
   }
 

@@ -22,18 +22,23 @@ export default function CancelForm({
     setError(null);
     setSubmitting(true);
 
-    const res = await fetch(
-      `/api/reservations/${reservationId}${series ? "?series=true" : ""}`,
-      { method: "DELETE" }
-    );
+    try {
+      const res = await fetch(
+        `/api/reservations/${reservationId}${series ? "?series=true" : ""}`,
+        { method: "DELETE" }
+      );
 
-    if (res.ok) {
-      router.push("/");
-      router.refresh();
-      return;
+      if (res.ok) {
+        // 이동할 때까지 버튼은 비활성으로 둔다 (중복 요청 방지)
+        router.push("/");
+        router.refresh();
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      setError(data?.error ?? "취소에 실패했습니다.");
+    } catch {
+      setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
-    const data = await res.json().catch(() => null);
-    setError(data?.error ?? "취소에 실패했습니다.");
     setSubmitting(false);
   }
 
