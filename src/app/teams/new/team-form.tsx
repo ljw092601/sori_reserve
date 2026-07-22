@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { SONG_URL_MAX } from "@/lib/constants";
+import { SONG_URL_MAX, TEAM_CONTENT_MAX } from "@/lib/constants";
 import type { Board, MemberEntry } from "@/lib/types";
 import { MembersInput, StatusRadio } from "../form-fields";
 
@@ -115,6 +115,7 @@ export default function TeamForm({
           모집 글 (선택)
           <textarea
             rows={5}
+            maxLength={TEAM_CONTENT_MAX}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={"예: 드럼, 베이스 구합니다!\n연습은 주 1회 예정이에요."}

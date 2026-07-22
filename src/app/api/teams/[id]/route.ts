@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { dbErrorResponse } from "@/lib/api-error";
-import { isAdminBlockTeam } from "@/lib/constants";
+import { TEAM_CONTENT_MAX, isAdminBlockTeam } from "@/lib/constants";
 import { isExecutive } from "@/lib/roles";
-import { parseMemberEntries, parseSongUrl } from "@/lib/validate";
+import {
+  parseMemberEntries,
+  parseOptionalText,
+  parseSongUrl,
+} from "@/lib/validate";
 
 /** 팀(모집글) 조회 — { team } 또는 { fail: 에러 응답 } */
 async function findTeam(id: string) {
@@ -99,6 +103,10 @@ export async function PATCH(
   if ("error" in song) {
     return NextResponse.json({ error: song.error }, { status: 400 });
   }
+  const content = parseOptionalText(body.content, TEAM_CONTENT_MAX, "모집 글");
+  if ("error" in content) {
+    return NextResponse.json({ error: content.error }, { status: 400 });
+  }
 
   const found = await findTeam(id);
   if (found.fail) return found.fail;
@@ -138,7 +146,7 @@ export async function PATCH(
       name,
       status: body.status,
       members: parsed.entries,
-      content: body.content?.trim() || null,
+      content: content.text,
       song_url: song.url,
     })
     .eq("id", id)

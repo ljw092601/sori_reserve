@@ -3,7 +3,8 @@ import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { dbErrorResponse } from "@/lib/api-error";
 import { isExecutive } from "@/lib/roles";
-import { validateBlockRule } from "@/lib/validate";
+import { parseOptionalText, validateBlockRule } from "@/lib/validate";
+import { BLOCK_RULE_NOTE_MAX } from "@/lib/constants";
 
 const RULE_SELECT =
   "id, day_of_week, start_min, end_min, note, created_by, created_by_name, created_at";
@@ -55,6 +56,10 @@ export async function PATCH(
   if (ruleError) {
     return NextResponse.json({ error: ruleError }, { status: 400 });
   }
+  const note = parseOptionalText(body.note, BLOCK_RULE_NOTE_MAX, "메모");
+  if ("error" in note) {
+    return NextResponse.json({ error: note.error }, { status: 400 });
+  }
 
   const { data, error } = await supabaseAdmin()
     .from("block_rules")
@@ -62,7 +67,7 @@ export async function PATCH(
       day_of_week: body.dayOfWeek,
       start_min: body.startMin,
       end_min: body.endMin,
-      note: body.note?.trim() || null,
+      note: note.text,
     })
     .eq("id", id)
     .select(RULE_SELECT)

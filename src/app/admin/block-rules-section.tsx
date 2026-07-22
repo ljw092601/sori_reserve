@@ -8,6 +8,7 @@ import {
   minToHHMM,
   type BlockRule,
 } from "@/lib/block-rules";
+import { BLOCK_RULE_NOTE_MAX } from "@/lib/constants";
 
 /** 요일 선택지 — 월요일부터 보여준다 (day_of_week 값은 0=일 그대로) */
 const DOW_OPTIONS = [1, 2, 3, 4, 5, 6, 0];
@@ -233,6 +234,7 @@ export default function BlockRulesSection() {
           메모 (선택)
           <input
             type="text"
+            maxLength={BLOCK_RULE_NOTE_MAX}
             value={draft.note}
             onChange={(e) => setDraft({ ...draft, note: e.target.value })}
             placeholder="예: 정기 회의, 청소 시간"

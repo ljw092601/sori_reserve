@@ -6,6 +6,7 @@ import {
   DURATION_OPTIONS,
   isAdminBlockTeam,
   RESERVATION_CATEGORIES,
+  RESERVATION_NOTE_MAX,
   type ReservationCategory,
 } from "@/lib/constants";
 import { kstToIso } from "@/lib/dates";
@@ -217,6 +218,7 @@ export default function EditForm({
         메모 (선택)
         <input
           type="text"
+          maxLength={RESERVATION_NOTE_MAX}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="예: 정기합주, 공연연습"

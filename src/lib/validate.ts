@@ -71,6 +71,37 @@ export function parseSongUrl(
   return { url };
 }
 
+/** 받침 유무에 따라 은/는 조사를 고른다 (에러 메시지용) */
+const topicParticle = (word: string) => {
+  const code = word.charCodeAt(word.length - 1);
+  const isHangul = code >= 0xac00 && code <= 0xd7a3;
+  return isHangul && (code - 0xac00) % 28 !== 0 ? "은" : "는";
+};
+
+/**
+ * 선택 입력 텍스트 필드(메모·본문)를 검증·정리한다.
+ * - 비어 있으면 null (저장 안 함)
+ * - 최대 길이 초과는 에러 — 제한이 없으면 수 MB도 저장될 수 있다
+ */
+export function parseOptionalText(
+  input: unknown,
+  max: number,
+  label: string
+): { text: string | null } | { error: string } {
+  if (input == null) return { text: null };
+  if (typeof input !== "string") {
+    return { error: `${label} 형식이 올바르지 않습니다.` };
+  }
+  const text = input.trim();
+  if (!text) return { text: null };
+  if (text.length > max) {
+    return {
+      error: `${label}${topicParticle(label)} ${max}자 이내로 입력해주세요.`,
+    };
+  }
+  return { text };
+}
+
 /**
  * 예약 시간 범위를 검증한다. 문제가 있으면 사용자에게 보여줄 메시지를,
  * 통과하면 null을 반환한다. (겹침 검사는 DB exclusion constraint가 담당)

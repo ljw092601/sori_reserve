@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { dbErrorResponse } from "@/lib/api-error";
-import { TEAM_COLORS, isAdminBlockTeam } from "@/lib/constants";
+import {
+  TEAM_COLORS,
+  TEAM_CONTENT_MAX,
+  isAdminBlockTeam,
+} from "@/lib/constants";
 import { isExecutive } from "@/lib/roles";
-import { parseMemberEntries, parseSongUrl } from "@/lib/validate";
+import {
+  parseMemberEntries,
+  parseOptionalText,
+  parseSongUrl,
+} from "@/lib/validate";
 import { displayName } from "@/lib/profile";
 
 const TEAM_SELECT =
@@ -109,6 +117,10 @@ export async function POST(req: NextRequest) {
   if ("error" in song) {
     return NextResponse.json({ error: song.error }, { status: 400 });
   }
+  const content = parseOptionalText(body.content, TEAM_CONTENT_MAX, "모집 글");
+  if ("error" in content) {
+    return NextResponse.json({ error: content.error }, { status: 400 });
+  }
 
   const boardId = body.board_id?.trim();
   if (!boardId) {
@@ -151,7 +163,7 @@ export async function POST(req: NextRequest) {
       color,
       status,
       members: parsed.entries,
-      content: body.content?.trim() || null,
+      content: content.text,
       song_url: song.url,
       created_by: session.user.id,
       created_by_name: await displayName(

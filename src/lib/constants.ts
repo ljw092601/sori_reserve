@@ -57,6 +57,15 @@ export const CATEGORY_COLORS: Record<ReservationCategory, string> = {
 /** 모집글 곡 링크 최대 길이 — 폼 maxLength와 서버 검증이 함께 쓴다 */
 export const SONG_URL_MAX = 300;
 
+/** 예약 메모 최대 길이 — 폼 maxLength와 서버 검증이 함께 쓴다 */
+export const RESERVATION_NOTE_MAX = 200;
+
+/** 모집글 본문 최대 길이 — 폼 maxLength와 서버 검증이 함께 쓴다 */
+export const TEAM_CONTENT_MAX = 2000;
+
+/** 정기 사용 금지 규칙 메모 최대 길이 — 예약 거부 에러 메시지에 삽입되므로 짧게 유지 */
+export const BLOCK_RULE_NOTE_MAX = 200;
+
 /** 팀원 세션 선택지 — 이 외에는 "직접 입력"으로 자유 입력 */
 export const SESSION_PRESETS = [
   "보컬",

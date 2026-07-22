@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { dbErrorResponse } from "@/lib/api-error";
-import { validateBlockRange, validateRange } from "@/lib/validate";
+import {
+  parseOptionalText,
+  validateBlockRange,
+  validateRange,
+} from "@/lib/validate";
 import {
   isAdminBlockTeam,
   isReservationCategory,
+  RESERVATION_NOTE_MAX,
   RULES,
 } from "@/lib/constants";
 import { findRuleConflict, ruleLabel } from "@/lib/block-rules";
@@ -98,7 +103,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { teamId, startsAt, endsAt, note } = body;
+  const { teamId, startsAt, endsAt } = body;
   if (!startsAt || !endsAt) {
     return NextResponse.json(
       { error: "시작/종료 시간은 필수입니다." },
@@ -123,6 +128,10 @@ export async function POST(req: NextRequest) {
       { error: "제목은 50자 이내로 입력해주세요." },
       { status: 400 }
     );
+  }
+  const note = parseOptionalText(body.note, RESERVATION_NOTE_MAX, "메모");
+  if ("error" in note) {
+    return NextResponse.json({ error: note.error }, { status: 400 });
   }
 
   const supabase = supabaseAdmin();
@@ -226,7 +235,7 @@ export async function POST(req: NextRequest) {
       title: category === "etc" ? title : null,
       starts_at: new Date(Date.parse(startsAt)).toISOString(),
       ends_at: new Date(Date.parse(endsAt)).toISOString(),
-      note: note?.trim() || null,
+      note: note.text,
       created_by: session.user.id,
       created_by_name: createdByName,
     })
