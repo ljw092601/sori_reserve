@@ -200,6 +200,10 @@
 - [ ] `GET /api/reservations`가 비로그인 응답에 네이버 고유 ID(`created_by`) 노출 → `mine: boolean` 플래그로 대체
 - [ ] 마지막 임원 강등 방지가 원자적이지 않음 (count와 update가 별개 쿼리) → 단일 쿼리/RPC — `api/admin/members/route.ts:138-156`
 - [ ] 댓글 삭제만 `alert()` 사용 → 인라인 에러로 통일 — `teams/[id]/comment-delete-button.tsx:27,29`
+- [ ] 커스텀 `not-found.tsx` 추가 (한국어) — 지금은 영어 기본 404 페이지.
+      함께 알아둘 것: 루트 `loading.tsx` 도입(스트리밍) 이후 없는 팀/예약 상세가
+      HTTP 200 + 404 UI(soft 404)로 응답됨 — 상태 코드가 스트리밍 시작 시 먼저 전송되는
+      Next.js 동작. 내부 사이트라 실해 없음 (2026-07-22 배포 E2E에서 발견)
 - [ ] 문서 정리(남은 것): README.md가 create-next-app 기본 그대로 — 프로젝트 소개로 교체
 - [ ] 정책 결정 필요: 임원이 부적절한 댓글·모집글을 삭제할 수 없음 (모더레이션 권한 공백)
 - [ ] (선택) `isAdminBlockTeam`이 zero-width 문자(U+200B 등)를 제거하지 못함 — 권한 경계는 일관되어
