@@ -45,7 +45,13 @@ export default async function Home({
 }) {
   const { d } = await searchParams;
   const today = kstDateString(new Date());
-  const anchor = d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : today;
+  // 정규식은 형식만 거른다 — 실존하지 않는 날짜는 V8에서 롤오버(2026-02-30→3/2)되거나
+  // NaN(2026-13-01 → toISOString이 RangeError로 500)이 되므로, 라운드트립 비교로 걸러 오늘로 폴백
+  const isRealDate = (s: string) => {
+    const t = Date.parse(s + "T00:00:00Z");
+    return !Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === s;
+  };
+  const anchor = d && /^\d{4}-\d{2}-\d{2}$/.test(d) && isRealDate(d) ? d : today;
   const weekStart = mondayOf(anchor);
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 

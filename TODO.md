@@ -126,12 +126,12 @@
 행 번호는 리뷰 시점 기준이므로 코드가 바뀌면 어긋날 수 있음.
 (2026-07-22 확인: 리뷰 이후 코드 변경은 발표 슬라이드 배포뿐이라 아래 미완 항목은 전부 여전히 유효.)
 
-## 완료된 항목 (2026-07-14)
+## 완료된 항목
 
-- [x] **[심각] 팀 모집글 PATCH 소유권/경계 검사 부재** — 커밋 3869cb5.
+- [x] **[심각] 팀 모집글 PATCH 소유권/경계 검사 부재** — 커밋 3869cb5 (2026-07-14).
       관리용 팀(board_id null 또는 "사용금지" 이름)과 이름의 사용금지 경계 변경은
       임원 전용으로 제한 (PATCH/DELETE/POST). 협업 수정 UX는 유지.
-- [x] **[심각] schema.sql에 profiles.role 컬럼 누락** — 커밋 3869cb5.
+- [x] **[심각] schema.sql에 profiles.role 컬럼 누락** — 커밋 3869cb5 (2026-07-14).
       컬럼 + check 제약 + 마이그레이션 주석 추가. 운영 DB는 이미 수동 반영돼 있어 실행할 것 없음.
 - [x] 문서 정리(일부): PLAN.md의 낡은 서술(반복 예약 구현됨, 관리자 페이지 후순위 등)을
       현행화해서 이 파일 1부로 흡수, PLAN.md 삭제 (2026-07-22).
@@ -140,15 +140,17 @@
       `constants.ts`에 `RESERVATION_NOTE_MAX`·`TEAM_CONTENT_MAX`·`BLOCK_RULE_NOTE_MAX` 추가,
       `validate.ts`의 `parseOptionalText` 헬퍼로 서버 6곳(POST/PATCH×3) 검증 + 폼 6곳 maxLength 공유.
       비문자열 note/content가 `.trim()`에서 500 나던 타입 버그도 함께 해결 (400 반환).
+- [x] **[중요] RLS 활성화** — 2026-07-22 완료. schema.sql에 6개 테이블
+      `enable row level security` + 하단 마이그레이션 블록 추가, 운영 DB에도 실행함.
+      정책 없이 켜서 anon 키에 deny-all, service role은 RLS 우회라 앱 코드 변경 없음.
+      참고: 운영 DB 스키마 변경(DDL)은 이제 Supabase 대시보드 SQL Editor 외에
+      Supabase MCP(`execute_sql`/`apply_migration`, user 스코프 등록됨)로도 가능.
+- [x] **`/?d=2026-02-30` 같은 잘못된 날짜로 홈 500** — 2026-07-22.
+      `src/app/page.tsx`: 정규식 통과 후 라운드트립 검증(파싱 → 재직렬화 == 원본)으로
+      NaN 날짜(2026-13-01 → RangeError 500)와 롤오버 날짜(2026-02-30 → 3/2로 표시)를 모두 오늘로 폴백.
+      루트 `error.tsx`(한국어 + `unstable_retry` 재시도 버튼, Next 16.2 표준) / `loading.tsx`(스켈레톤) 추가.
 
 ## 중요 (다음 작업 우선순위)
-
-- [ ] **RLS 활성화 (6줄)** — `supabase/schema.sql`
-      코드는 service key만 쓰지만 Supabase의 anon 키 + Data API가 기본 활성이라,
-      RLS 없는 public 테이블은 anon 키 유출 시 전체가 읽기/쓰기로 열린다.
-      정책은 만들 필요 없이 테이블당 한 줄이면 deny-all (service role은 RLS 우회하므로 코드 수정 불필요):
-      `alter table boards enable row level security;` — teams, profiles, comments, reservations, block_rules 동일.
-      운영 DB에도 같은 SQL 실행 필요.
 
 - [ ] **500 응답의 DB 에러 원문 노출 제거** — 대부분의 API 라우트
       `{ error: error.message }`가 Postgres 원문(테이블·컬럼·제약명)을 그대로 반환.
@@ -166,11 +168,6 @@
       `teams/new/team-form.tsx`, `teams/[id]/edit/edit-form.tsx`, `teams/[id]/comment-form.tsx`,
       `teams/[id]/delete-form.tsx`, `teams/[id]/comment-delete-button.tsx`, `teams/board-manager.tsx`(4곳),
       `admin/block-form.tsx`, `admin/block-rules-section.tsx`(2곳), `admin/members-section.tsx`, `account/account-form.tsx`.
-
-- [ ] **`/?d=2026-02-30` 같은 잘못된 날짜로 홈 500** — `src/app/page.tsx:48-49`
-      정규식만 통과하면 `mondayOf` 내부 `toISOString()`이 RangeError (try 블록 바깥).
-      → `Date.parse` 실패 시 오늘로 폴백. 함께 루트 `error.tsx`(한국어) + `loading.tsx`(스켈레톤) 추가 —
-      현재 둘 다 없어서 렌더 예외는 영어 기본 에러 화면, 내비게이션은 멈춘 것처럼 보임.
 
 ## 사소 (여유 될 때)
 
