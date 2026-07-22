@@ -128,10 +128,10 @@
 
 ## 완료된 항목
 
-- [x] **[심각] 팀 모집글 PATCH 소유권/경계 검사 부재** — 커밋 3869cb5.
+- [x] **[심각] 팀 모집글 PATCH 소유권/경계 검사 부재** — 커밋 3869cb5 (2026-07-14).
       관리용 팀(board_id null 또는 "사용금지" 이름)과 이름의 사용금지 경계 변경은
       임원 전용으로 제한 (PATCH/DELETE/POST). 협업 수정 UX는 유지.
-- [x] **[심각] schema.sql에 profiles.role 컬럼 누락** — 커밋 3869cb5.
+- [x] **[심각] schema.sql에 profiles.role 컬럼 누락** — 커밋 3869cb5 (2026-07-14).
       컬럼 + check 제약 + 마이그레이션 주석 추가. 운영 DB는 이미 수동 반영돼 있어 실행할 것 없음.
 - [x] 문서 정리(일부): PLAN.md의 낡은 서술(반복 예약 구현됨, 관리자 페이지 후순위 등)을
       현행화해서 이 파일 1부로 흡수, PLAN.md 삭제 (2026-07-22).
@@ -140,6 +140,10 @@
       정책 없이 켜서 anon 키에 deny-all, service role은 RLS 우회라 앱 코드 변경 없음.
       참고: 운영 DB 스키마 변경(DDL)은 이제 Supabase 대시보드 SQL Editor 외에
       Supabase MCP(`execute_sql`/`apply_migration`, user 스코프 등록됨)로도 가능.
+- [x] **`/?d=2026-02-30` 같은 잘못된 날짜로 홈 500** — 2026-07-22.
+      `src/app/page.tsx`: 정규식 통과 후 라운드트립 검증(파싱 → 재직렬화 == 원본)으로
+      NaN 날짜(2026-13-01 → RangeError 500)와 롤오버 날짜(2026-02-30 → 3/2로 표시)를 모두 오늘로 폴백.
+      루트 `error.tsx`(한국어 + `unstable_retry` 재시도 버튼, Next 16.2 표준) / `loading.tsx`(스켈레톤) 추가.
 
 ## 중요 (다음 작업 우선순위)
 
@@ -166,11 +170,6 @@
       - 금지 규칙 메모 `note`: `api/admin/block-rules/route.ts:94`, `[id]/route.ts:64` → 200자 제안
         (이 값은 예약 거부 에러 메시지에 삽입되므로 우선)
       서버 검증 + 폼 maxLength를 constants로 공유.
-
-- [ ] **`/?d=2026-02-30` 같은 잘못된 날짜로 홈 500** — `src/app/page.tsx:48-49`
-      정규식만 통과하면 `mondayOf` 내부 `toISOString()`이 RangeError (try 블록 바깥).
-      → `Date.parse` 실패 시 오늘로 폴백. 함께 루트 `error.tsx`(한국어) + `loading.tsx`(스켈레톤) 추가 —
-      현재 둘 다 없어서 렌더 예외는 영어 기본 에러 화면, 내비게이션은 멈춘 것처럼 보임.
 
 ## 사소 (여유 될 때)
 
