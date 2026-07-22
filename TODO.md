@@ -123,10 +123,12 @@
 
 2026-07-14 전체 코드 리뷰(API 라우트 / 페이지·컴포넌트 / 데이터 계층 3방향) 결과 정리.
 다음 세션에서 이어서 작업할 수 있도록 남은 수정사항과 추천 기능을 우선순위별로 기록한다.
-행 번호는 리뷰 시점 기준이므로 코드가 바뀌면 어긋날 수 있음.
-(2026-07-22 확인: 리뷰 이후 코드 변경은 발표 슬라이드 배포뿐이라 아래 미완 항목은 전부 여전히 유효.)
+행 번호는 마지막 갱신(2026-07-22) 기준이므로 코드가 바뀌면 어긋날 수 있음.
 
-## 완료된 항목 (2026-07-14)
+진행 현황 (2026-07-22): "중요" 5건 중 3건 완료(RLS / 500 에러 노출 / 폼 try-catch),
+2건 남음(텍스트 길이 제한 / 홈 날짜 500). "사소"와 "추천 기능"은 미착수.
+
+## 완료된 항목
 
 - [x] **[심각] 팀 모집글 PATCH 소유권/경계 검사 부재** — 커밋 3869cb5.
       관리용 팀(board_id null 또는 "사용금지" 이름)과 이름의 사용금지 경계 변경은
@@ -135,17 +137,18 @@
       컬럼 + check 제약 + 마이그레이션 주석 추가. 운영 DB는 이미 수동 반영돼 있어 실행할 것 없음.
 - [x] 문서 정리(일부): PLAN.md의 낡은 서술(반복 예약 구현됨, 관리자 페이지 후순위 등)을
       현행화해서 이 파일 1부로 흡수, PLAN.md 삭제 (2026-07-22).
-- [x] **RLS 활성화** — 운영 DB에는 이미 적용돼 있던 것으로 확인 (2026-07-22:
-      6개 테이블 전부 rowsecurity=true, 정책 0개 = deny-all). schema.sql에만 누락돼 있어
-      본 스키마 + 마이그레이션 주석으로 동기화 완료.
-- [x] **500 응답의 DB 에러 원문 노출 제거** (2026-07-22) — 공용 헬퍼 `src/lib/api-error.ts`의
+- [x] **RLS 활성화** — 커밋 faddb9a (2026-07-22). 운영 DB에는 이미 적용돼 있던 것으로 확인
+      (6개 테이블 전부 rowsecurity=true, 정책 0개 = deny-all). schema.sql에만 누락돼 있어
+      본 스키마 + 마이그레이션 주석으로 동기화 완료. 재발 방지로 AGENTS.md에
+      "schema.sql 먼저" 스키마 변경 절차 규칙 추가.
+- [x] **500 응답의 DB 에러 원문 노출 제거** — 커밋 4cdc477 (2026-07-22). 공용 헬퍼 `src/lib/api-error.ts`의
       `dbErrorResponse(context, error)`로 통일: 원문은 `console.error`로 서버에만, 클라이언트엔
       일반 메시지. 리뷰 목록의 21곳 + 추가 발견 3곳(`boardError`/`teamError`/`countError` —
       접두사 붙은 에러 변수라 리뷰 grep에서 누락) 총 24곳 교체.
       함께: `GET /api/reservations`의 `from`/`to` 검증 추가 — 파싱 불가 값은 400, 유효 값은
       `toISOString()`으로 정규화 후 쿼리. 서버 컴포넌트의 `throw new Error(error.message)`
       2곳(page.tsx, reserve/page.tsx)은 Next.js가 프로덕션에서 마스킹하므로 비노출 확인.
-- [x] **클라이언트 폼 fetch에 try/catch 없음** (2026-07-22) — 제출 핸들러 17곳(13개 파일)에
+- [x] **클라이언트 폼 fetch에 try/catch 없음** — 커밋 a73c424 (2026-07-22). 제출 핸들러 17곳(13개 파일)에
       try/catch 적용, 네트워크 오류 시 "네트워크 오류가 발생했습니다..." 표시 후 버튼 복구.
       성공 시 페이지 이동하는 폼은 이동 완료까지 버튼 비활성 유지(중복 제출 방지) — finally 대신
       catch 뒤 `setSubmitting(false)` + 성공 경로 early return 패턴.
@@ -154,9 +157,9 @@
 ## 중요 (다음 작업 우선순위)
 
 - [ ] **길이 제한 없는 텍스트 필드 3종** — 수 MB도 저장 가능 (다른 필드는 전부 제한 있음)
-      - 예약 메모 `note`: `api/reservations/route.ts:215`, `api/reservations/[id]/route.ts:210` → 200자 제안
-      - 모집글 본문 `content`: `api/teams/route.ts:144`, `api/teams/[id]/route.ts:118` → 2000자 제안
-      - 금지 규칙 메모 `note`: `api/admin/block-rules/route.ts:94`, `[id]/route.ts:64` → 200자 제안
+      - 예약 메모 `note`: `api/reservations/route.ts:229`, `api/reservations/[id]/route.ts:211` → 200자 제안
+      - 모집글 본문 `content`: `api/teams/route.ts:154`, `api/teams/[id]/route.ts:141` → 2000자 제안
+      - 금지 규칙 메모 `note`: `api/admin/block-rules/route.ts:95`, `[id]/route.ts:65` → 200자 제안
         (이 값은 예약 거부 에러 메시지에 삽입되므로 우선)
       서버 검증 + 폼 maxLength를 constants로 공유.
 
@@ -168,9 +171,9 @@
 ## 사소 (여유 될 때)
 
 - [ ] PATCH 예약 수정이 시간 문자열을 정규화 없이 저장 (POST는 `toISOString()` 후 저장 — 불일치)
-      — `api/reservations/[id]/route.ts:208-209`
+      — `api/reservations/[id]/route.ts:209-210`
 - [ ] 닉네임 변경 시 3테이블(`reservations`/`teams`/`comments`) 일괄 갱신의 `.error` 미확인 —
-      부분 실패해도 200 반환 — `api/profile/route.ts:53-66`
+      부분 실패해도 200 반환 — `api/profile/route.ts:53-67`
 - [ ] 누락 인덱스 3종 (schema.sql + 운영 DB):
       `reservations(series_id) where series_id is not null`, 3테이블 `(created_by)`, `boards(deleted_at)`
 - [ ] `src/lib/supabase.ts`에 `import "server-only"` 추가 (1줄) — 클라이언트 import를 빌드 에러로 강제.
@@ -193,8 +196,8 @@
       - StatusRadio 포커스 표시 없음 (`sr-only` input + label에 focus 스타일 부재) — `teams/form-fields.tsx:33-40`
 - [ ] `MembersInput`의 `key={i}` — 중간 행 삭제 시 세션 select UI 어긋남 → 고유 id key 또는 custom 파생 — `teams/form-fields.tsx:140-141`
 - [ ] `GET /api/reservations`가 비로그인 응답에 네이버 고유 ID(`created_by`) 노출 → `mine: boolean` 플래그로 대체
-- [ ] 마지막 임원 강등 방지가 원자적이지 않음 (count와 update가 별개 쿼리) → 단일 쿼리/RPC — `api/admin/members/route.ts:137-158`
-- [ ] 댓글 삭제만 `alert()` 사용 → 인라인 에러로 통일 — `teams/[id]/comment-delete-button.tsx:26`
+- [ ] 마지막 임원 강등 방지가 원자적이지 않음 (count와 update가 별개 쿼리) → 단일 쿼리/RPC — `api/admin/members/route.ts:138-156`
+- [ ] 댓글 삭제만 `alert()` 사용 → 인라인 에러로 통일 — `teams/[id]/comment-delete-button.tsx:27,29`
 - [ ] 문서 정리(남은 것): README.md가 create-next-app 기본 그대로 — 프로젝트 소개로 교체
 - [ ] 정책 결정 필요: 임원이 부적절한 댓글·모집글을 삭제할 수 없음 (모더레이션 권한 공백)
 - [ ] (선택) `isAdminBlockTeam`이 zero-width 문자(U+200B 등)를 제거하지 못함 — 권한 경계는 일관되어
