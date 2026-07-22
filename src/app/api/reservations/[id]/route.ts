@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { validateBlockRange, validateRange } from "@/lib/validate";
-import { isAdminBlockTeam, isReservationCategory } from "@/lib/constants";
+import {
+  parseOptionalText,
+  validateBlockRange,
+  validateRange,
+} from "@/lib/validate";
+import {
+  isAdminBlockTeam,
+  isReservationCategory,
+  RESERVATION_NOTE_MAX,
+} from "@/lib/constants";
 import { findRuleConflict, ruleLabel } from "@/lib/block-rules";
 import { isExecutive } from "@/lib/roles";
 
@@ -55,7 +63,7 @@ export async function PATCH(
     );
   }
 
-  const { teamId, startsAt, endsAt, note } = body;
+  const { teamId, startsAt, endsAt } = body;
   if (!startsAt || !endsAt) {
     return NextResponse.json(
       { error: "시작/종료 시간은 필수입니다." },
@@ -80,6 +88,10 @@ export async function PATCH(
       { error: "제목은 50자 이내로 입력해주세요." },
       { status: 400 }
     );
+  }
+  const note = parseOptionalText(body.note, RESERVATION_NOTE_MAX, "메모");
+  if ("error" in note) {
+    return NextResponse.json({ error: note.error }, { status: 400 });
   }
 
   const supabase = supabaseAdmin();
@@ -207,7 +219,7 @@ export async function PATCH(
       title: category === "etc" ? title : null,
       starts_at: startsAt,
       ends_at: endsAt,
-      note: note?.trim() || null,
+      note: note.text,
     })
     .eq("id", id)
     .select("id")

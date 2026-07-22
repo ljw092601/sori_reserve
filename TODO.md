@@ -135,6 +135,11 @@
       컬럼 + check 제약 + 마이그레이션 주석 추가. 운영 DB는 이미 수동 반영돼 있어 실행할 것 없음.
 - [x] 문서 정리(일부): PLAN.md의 낡은 서술(반복 예약 구현됨, 관리자 페이지 후순위 등)을
       현행화해서 이 파일 1부로 흡수, PLAN.md 삭제 (2026-07-22).
+- [x] **길이 제한 없는 텍스트 필드 3종** (2026-07-22) —
+      예약 메모 `note` 200자 / 모집글 본문 `content` 2000자 / 금지 규칙 메모 `note` 200자.
+      `constants.ts`에 `RESERVATION_NOTE_MAX`·`TEAM_CONTENT_MAX`·`BLOCK_RULE_NOTE_MAX` 추가,
+      `validate.ts`의 `parseOptionalText` 헬퍼로 서버 6곳(POST/PATCH×3) 검증 + 폼 6곳 maxLength 공유.
+      비문자열 note/content가 `.trim()`에서 500 나던 타입 버그도 함께 해결 (400 반환).
 
 ## 중요 (다음 작업 우선순위)
 
@@ -161,13 +166,6 @@
       `teams/new/team-form.tsx`, `teams/[id]/edit/edit-form.tsx`, `teams/[id]/comment-form.tsx`,
       `teams/[id]/delete-form.tsx`, `teams/[id]/comment-delete-button.tsx`, `teams/board-manager.tsx`(4곳),
       `admin/block-form.tsx`, `admin/block-rules-section.tsx`(2곳), `admin/members-section.tsx`, `account/account-form.tsx`.
-
-- [ ] **길이 제한 없는 텍스트 필드 3종** — 수 MB도 저장 가능 (다른 필드는 전부 제한 있음)
-      - 예약 메모 `note`: `api/reservations/route.ts:215`, `api/reservations/[id]/route.ts:210` → 200자 제안
-      - 모집글 본문 `content`: `api/teams/route.ts:144`, `api/teams/[id]/route.ts:118` → 2000자 제안
-      - 금지 규칙 메모 `note`: `api/admin/block-rules/route.ts:94`, `[id]/route.ts:64` → 200자 제안
-        (이 값은 예약 거부 에러 메시지에 삽입되므로 우선)
-      서버 검증 + 폼 maxLength를 constants로 공유.
 
 - [ ] **`/?d=2026-02-30` 같은 잘못된 날짜로 홈 500** — `src/app/page.tsx:48-49`
       정규식만 통과하면 `mondayOf` 내부 `toISOString()`이 RangeError (try 블록 바깥).

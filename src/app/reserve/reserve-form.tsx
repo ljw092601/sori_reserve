@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   DURATION_OPTIONS,
   RESERVATION_CATEGORIES,
+  RESERVATION_NOTE_MAX,
   RULES,
   type ReservationCategory,
 } from "@/lib/constants";
@@ -203,6 +204,7 @@ export default function ReserveForm({ teams }: { teams: Team[] }) {
           <input
             type="text"
             name="note"
+            maxLength={RESERVATION_NOTE_MAX}
             placeholder="예: 정기합주, 공연연습"
             className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
           />

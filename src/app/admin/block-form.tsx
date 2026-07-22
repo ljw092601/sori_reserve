@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { isAdminBlockTeam } from "@/lib/constants";
+import { RESERVATION_NOTE_MAX, isAdminBlockTeam } from "@/lib/constants";
 import { kstDateString, kstToIso } from "@/lib/dates";
 import type { Team } from "@/lib/types";
 
@@ -147,6 +147,7 @@ export default function BlockForm() {
         <input
           type="text"
           name="note"
+          maxLength={RESERVATION_NOTE_MAX}
           placeholder="예: 대청소, 정기공연 리허설"
           className="rounded-xl border border-[var(--border)] bg-white p-2.5 text-sm font-normal outline-none focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-violet-200 transition-shadow"
         />
